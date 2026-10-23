@@ -26,6 +26,13 @@ import {
   Music,
   ExternalLink,
   ArrowRight,
+  PhoneCall,
+  PhoneOff,
+  PhoneIncoming,
+  Bell,
+  BellRing,
+  Radio,
+  X,
 } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
 import { inspectUrlSafety, UrlInspectionResult } from '@/lib/rules';
@@ -117,6 +124,162 @@ export default function Home() {
         `[Voice Note Intercepted: ${file.name}] Suspicious WhatsApp audio message received requesting urgent verification and fund transfer.`
       );
     }
+  };
+
+  // Background Auto-Shield Sentry States
+  const [autoShieldActive, setAutoShieldActive] = useState(false);
+  const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
+  const lastScannedText = useRef<string>('');
+
+  // Live Call Interception Simulation States
+  const [simulatedCallActive, setSimulatedCallActive] = useState(false);
+  const [callSimStep, setCallSimStep] = useState<'ringing' | 'screening' | 'alert'>('ringing');
+  const [callTranscript, setCallTranscript] = useState('');
+
+  // Background Auto-Scan Handler
+  const triggerAutoScan = async (textToScan: string) => {
+    if (!textToScan.trim() || textToScan === lastScannedText.current) return;
+    lastScannedText.current = textToScan;
+    setMessage(textToScan);
+    setClipboardNotice('Clipboard content auto-detected! Scanning with Gemma 4...');
+
+    setLoading(true);
+    setError(null);
+    setAssessment(null);
+    setLinkTraceResult(null);
+
+    try {
+      const res = await fetch('/api/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: textToScan,
+          lang,
+          source: textToScan.startsWith('http') ? 'link' : 'text',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Server error occurred');
+
+      setAssessment(data.assessment);
+      if (data.linkTrace) setLinkTraceResult(data.linkTrace);
+      setRawOutput(data.raw);
+
+      // Trigger native browser notification if permitted
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        const title =
+          data.assessment.finalRisk === 'high'
+            ? '🚨 Scam Shield: HIGH RISK SCAM INTERCEPTED'
+            : data.assessment.finalRisk === 'medium'
+            ? '⚠️ Scam Shield: Suspicious Activity Detected'
+            : '🛡️ Scam Shield: Content Verified';
+        new Notification(title, {
+          body: `${data.assessment.scamType}\n${data.assessment.reasons[0] || 'Be cautious.'}`,
+          icon: '/favicon.ico',
+        });
+      }
+    } catch (err: any) {
+      setError(err.message || 'Auto-scan failed.');
+    } finally {
+      setLoading(false);
+      setTimeout(() => setClipboardNotice(null), 4000);
+    }
+  };
+
+  const toggleAutoShield = async () => {
+    if (!autoShieldActive) {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+      setAutoShieldActive(true);
+      setClipboardNotice('Auto-Shield Active! Copy any message or link in background to auto-scan.');
+      setTimeout(() => setClipboardNotice(null), 3500);
+    } else {
+      setAutoShieldActive(false);
+      setClipboardNotice(null);
+    }
+  };
+
+  // Background Auto-Shield Listener (listens when user returns to tab after copying)
+  useEffect(() => {
+    if (!autoShieldActive) return;
+
+    const checkClipboard = async () => {
+      try {
+        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+          const text = await navigator.clipboard.readText();
+          if (text && text.trim().length > 6 && text.trim() !== lastScannedText.current) {
+            triggerAutoScan(text.trim());
+          }
+        }
+      } catch (err) {
+        // Clipboard read permission notice
+      }
+    };
+
+    const handleFocus = () => checkClipboard();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkClipboard();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [autoShieldActive, lang]);
+
+  // Live Call Simulation Handlers
+  const startCallSimulation = () => {
+    setSimulatedCallActive(true);
+    setCallSimStep('ringing');
+    setCallTranscript('');
+  };
+
+  const answerCallSimulation = async () => {
+    setCallSimStep('screening');
+    const fakeCallText =
+      'Assalam-o-Alaikum, State Bank Verification Division se bol raha hoon. Aapka ATM card aur account block kar diya gaya hai. Foran verification ke liye phone par aya 4-digit OTP code batayein warna account permanent seal ho jayega!';
+
+    setCallTranscript(fakeCallText);
+    setMessage(`[Live WhatsApp Call Intercepted]: ${fakeCallText}`);
+    setInputMode('voice');
+
+    try {
+      const res = await fetch('/api/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: fakeCallText,
+          lang,
+          source: 'audio',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAssessment(data.assessment);
+        setRawOutput(data.raw);
+        setCallSimStep('alert');
+
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification('🚨 EMERGENCY: FAKE BANK OTP CALL INTERCEPTED!', {
+            body: 'State Bank Impersonation Scam. Do not share your OTP code!',
+          });
+        }
+      }
+    } catch (e) {
+      setCallSimStep('alert');
+    }
+  };
+
+  const closeCallSimulation = () => {
+    setSimulatedCallActive(false);
+    setCallSimStep('ringing');
   };
 
   // Live Speech Recognition (Microphone Voice Call Scanner)
@@ -428,6 +591,57 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Background Auto-Shield Sentry Bar */}
+      <div className="w-full max-w-3xl px-4 mb-3">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-2.5 text-xs">
+            <div
+              className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                autoShieldActive ? 'bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/80' : 'bg-slate-600'
+              }`}
+            />
+            <div>
+              <span className="font-bold text-slate-200">
+                {lang === 'urdu' ? 'پس منظر خودکار شیلڈ (Auto-Shield Sentry):' : 'Background Auto-Shield Sentry:'}
+              </span>
+              <span className="text-slate-400 ml-1.5 hidden sm:inline">
+                {lang === 'urdu'
+                  ? 'دیگر ایپس سے میسجز یا لنکس کاپی ہوتے ہی خودکار اسکین اور الرٹ پاپ اپ'
+                  : 'Auto-scans copied WhatsApp messages & links with instant popups'}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={toggleAutoShield}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+              autoShieldActive
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/20'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+            }`}
+          >
+            <BellRing className="w-3.5 h-3.5" />
+            <span>
+              {autoShieldActive
+                ? lang === 'urdu'
+                  ? 'شیلڈ فعال ہے (ON)'
+                  : 'Shield Active (ON)'
+                : lang === 'urdu'
+                ? 'شیلڈ آن کریں'
+                : 'Enable Auto-Shield'}
+            </span>
+          </button>
+        </div>
+
+        {/* Temporary Auto-Scan Toast Notice */}
+        {clipboardNotice && (
+          <div className="mt-2 p-2.5 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in duration-200">
+            <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 animate-spin" />
+            <span>{clipboardNotice}</span>
+          </div>
+        )}
+      </div>
+
       {/* Main Single-Card Container */}
       <div className="w-full max-w-3xl px-4 space-y-5">
         {/* Clean 4-Way Mode Tabs */}
@@ -607,6 +821,29 @@ export default function Home() {
                       <audio controls src={audioFileUrl} className="h-8 max-w-full sm:max-w-xs" />
                     </div>
                   )}
+
+                  {/* Live Call Interceptor Simulator Trigger */}
+                  <div className="p-3.5 rounded-xl bg-gradient-to-r from-rose-950/40 via-slate-900 to-slate-900 border border-rose-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 text-rose-300 font-bold text-xs">
+                        <Radio className="w-4 h-4 animate-pulse text-rose-400" />
+                        <span>{lang === 'urdu' ? 'براہِ راست مشکوک کال انٹرسیپٹ سمیلیٹر' : 'Live Call Interceptor & Floating Alert Simulation'}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {lang === 'urdu'
+                          ? 'دیکھیں کہ جعلی کال کے دوران جیما 4 کیسے فوراً گفتگو اسکین کر کے اسکرین پر خطرے کا پاپ اپ دکھاتا ہے'
+                          : 'Test how Scam Shield intercepts live phone calls in real-time and triggers an emergency floating popup banner.'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={startCallSimulation}
+                      className="px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-900/30 flex items-center gap-2 cursor-pointer transition-all shrink-0"
+                    >
+                      <PhoneIncoming className="w-4 h-4" />
+                      <span>{lang === 'urdu' ? 'جعلی کال ٹیسٹ کریں' : 'Simulate Fake Bank Call'}</span>
+                    </button>
+                  </div>
 
                   {/* 1-Click Pakistani Voice Call Presets */}
                   <div className="pt-1 space-y-1.5">
@@ -995,6 +1232,126 @@ export default function Home() {
           Scam Shield Pakistan • Google Gemma 4 (26B-A4B-IT) • Apache 2.0 • MIT Open Source
         </p>
       </footer>
+
+      {/* Live Incoming Call Simulation Floating Modal */}
+      {simulatedCallActive && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <button
+              type="button"
+              onClick={closeCallSimulation}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Step 1: Ringing */}
+            {callSimStep === 'ringing' && (
+              <div className="text-center space-y-5">
+                <div className="w-20 h-20 mx-auto rounded-full bg-emerald-500/10 border-2 border-emerald-500/40 flex items-center justify-center text-emerald-400 animate-pulse shadow-xl shadow-emerald-500/20">
+                  <PhoneIncoming className="w-10 h-10 animate-bounce" />
+                </div>
+
+                <div>
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-rose-400 font-bold bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-500/30">
+                    Incoming Call Intercepted
+                  </span>
+                  <h3 className="text-xl font-bold text-white mt-2">+92 312 9988776</h3>
+                  <p className="text-xs text-slate-400 mt-1">Claiming: "State Bank Verification Cell"</p>
+                </div>
+
+                <p className="text-xs text-slate-300 bg-slate-950 p-3 rounded-xl border border-slate-800 leading-relaxed">
+                  The caller is demanding urgent identity confirmation under threat of bank account block. Would you like Gemma 4 to screen this call audio in real-time?
+                </p>
+
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={closeCallSimulation}
+                    className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-2 cursor-pointer transition-all"
+                  >
+                    <PhoneOff className="w-4 h-4 text-rose-400" />
+                    <span>Decline</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={answerCallSimulation}
+                    className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black shadow-lg shadow-emerald-500/30 flex items-center gap-2 cursor-pointer transition-all"
+                  >
+                    <PhoneCall className="w-4 h-4" />
+                    <span>Screen with Gemma 4</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Screening */}
+            {callSimStep === 'screening' && (
+              <div className="text-center space-y-4 py-4">
+                <div className="w-16 h-16 mx-auto rounded-full bg-amber-500/10 border-2 border-amber-500/40 flex items-center justify-center text-amber-400">
+                  <RefreshCw className="w-8 h-8 animate-spin" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-amber-300">Gemma 4 Listening & Screening Call Audio...</h3>
+                  <p className="text-xs text-slate-400 mt-1">Transcribing speech and analyzing urgency, fear, & OTP requests</p>
+                </div>
+                <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-left text-xs font-mono text-slate-300 leading-relaxed max-h-32 overflow-y-auto">
+                  {callTranscript || 'Listening to call audio...'}
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Emergency Alert Popup */}
+            {callSimStep === 'alert' && (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <div className="p-4 rounded-xl bg-rose-950/70 border-2 border-rose-500 flex items-start gap-3 shadow-2xl">
+                  <ShieldAlert className="w-8 h-8 text-rose-400 shrink-0 mt-0.5 animate-pulse" />
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-rose-300 font-black bg-rose-900/60 px-2 py-0.5 rounded border border-rose-500/30">
+                      🚨 EMERGENCY FLOATING POPUP ALERT
+                    </span>
+                    <h3 className="text-base font-black text-white">HIGH RISK FRAUD DETECTED!</h3>
+                    <p className="text-xs text-rose-200 leading-relaxed font-semibold">
+                      Gemma 4 identified this call as an <strong>OTP & Credential Theft Attack</strong> impersonating the State Bank.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 text-xs space-y-2">
+                  <div className="font-bold text-slate-200">Emergency Protection Actions:</div>
+                  <ul className="list-disc list-inside space-y-1 text-slate-300 text-[11px]">
+                    <li><strong>Do not share</strong> your 4-digit or 6-digit OTP code or ATM PIN.</li>
+                    <li>State Bank of Pakistan and commercial banks never call asking for codes.</li>
+                    <li>Hang up immediately and register an FIA complaint.</li>
+                  </ul>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={closeCallSimulation}
+                    className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-rose-900/30 cursor-pointer transition-all"
+                  >
+                    <PhoneOff className="w-4 h-4" />
+                    <span>Hang Up & Block Caller</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeCallSimulation();
+                      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }}
+                    className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>View Full Report</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
