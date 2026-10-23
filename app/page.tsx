@@ -486,7 +486,7 @@ export default function Home() {
       copyComplaint: '📋 Copy FIA Complaint',
       reasonsTitle: 'Why This Was Flagged (Wajuhat):',
       stepsTitle: 'What You Should Do (Agle Iqdamat):',
-      exampleLabel: 'Try an example:',
+      exampleLabel: '⚡ 1-Click Quick Demo Scenarios (Click to test model):',
       disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / This is guidance, not a guarantee.',
     },
     roman: {
@@ -511,7 +511,7 @@ export default function Home() {
       copyComplaint: '📋 Copy FIA Complaint',
       reasonsTitle: 'Khatray Ki Wajuhat (Why Flagged):',
       stepsTitle: 'Agle Hifazati Iqdamat (Next Steps):',
-      exampleLabel: 'Try an example:',
+      exampleLabel: '⚡ 1-Click Quick Demo Scenarios (Click karke model test karein):',
       disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / This is guidance, not a guarantee.',
     },
     urdu: {
@@ -536,7 +536,7 @@ export default function Home() {
       copyComplaint: '📋 ایف آئی اے شکایت کاپی کریں',
       reasonsTitle: 'خطرے کی وجوہات (شواہد):',
       stepsTitle: 'حفاظتی اقدامات (کیا کریں):',
-      exampleLabel: 'مثال آزمائیں:',
+      exampleLabel: '⚡ فوری ڈیمو کے نمونے (ماڈل ٹیسٹ کرنے کے لیے کلک کریں):',
       disclaimer: '⚠️ یہ رہنمائی کے لیے ہے، حتمی قانونی فیصلہ نہیں۔',
     },
   }[lang];
@@ -973,7 +973,10 @@ export default function Home() {
 
           {/* 3 Clear Clickable Examples */}
           <div className="pt-3 border-t border-slate-800/80">
-            <p className="text-xs text-slate-400 mb-2 font-mono">{t.exampleLabel}</p>
+            <p className="text-xs text-slate-400 mb-2 font-mono flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{t.exampleLabel}</span>
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
