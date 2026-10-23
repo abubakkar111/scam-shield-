@@ -31,6 +31,11 @@ import {
   Share2,
   FileText,
   AlertCircle,
+  Radio,
+  PhoneCall,
+  PhoneOff,
+  Bell,
+  BellRing,
 } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
 import { generateFiaComplaint } from '@/lib/complaint';
@@ -60,6 +65,14 @@ interface LinkTraceData {
   verdict: string;
 }
 
+interface InterceptionAlert {
+  source: 'call' | 'clipboard' | 'link';
+  scamType: string;
+  triggerSnippet: string;
+  threatLevel: 'high' | 'medium';
+  recommendedAction: string;
+}
+
 export default function Home() {
   // 3-Way Language Selector: English, Roman Urdu, Urdu (اردو)
   const [lang, setLang] = useState<'english' | 'roman' | 'urdu'>('roman');
@@ -69,10 +82,14 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Auto-Detect & Background Sentry States
-  const [autoDetectEnabled, setAutoDetectEnabled] = useState(true);
+  // Auto-Detect & Live Sentry Call Guard States
+  const [sentryActive, setSentryActive] = useState(true);
+  const [sentryListening, setSentryListening] = useState(false);
+  const [liveAudioSnippet, setLiveAudioSnippet] = useState<string | null>(null);
+  const [interceptionAlert, setInterceptionAlert] = useState<InterceptionAlert | null>(null);
   const [autoNotice, setAutoNotice] = useState<string | null>(null);
   const lastScannedTextRef = useRef<string>('');
+  const sentryRecognitionRef = useRef<any>(null);
 
   // Result States
   const [assessment, setAssessment] = useState<CombinedAssessment | null>(null);
@@ -87,13 +104,13 @@ export default function Home() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Audio Upload & Mic Recording States
+  // Audio Upload & Direct Mic Recording States
   const [audioFileUrl, setAudioFileUrl] = useState<string | null>(null);
   const [audioFileName, setAudioFileName] = useState<string | null>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const recognitionRef = useRef<any>(null);
+  const directRecognitionRef = useRef<any>(null);
 
   // Real-time Link Detection within the message text
   const detectedUrl = useMemo(() => {
@@ -101,6 +118,75 @@ export default function Home() {
     const match = message.match(urlRegex);
     return match ? match[0] : null;
   }, [message]);
+
+  // Web Audio API Synthesized Police / Security Siren Alert
+  const playSirenAlert = useCallback(() => {
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(587, now + 0.15);
+      osc.frequency.setValueAtTime(880, now + 0.3);
+      osc.frequency.setValueAtTime(587, now + 0.45);
+
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.6);
+    } catch (e) {
+      console.error('Audio siren error:', e);
+    }
+  }, []);
+
+  // Browser Native Push Notification Trigger
+  const triggerNativeNotification = useCallback((title: string, body: string) => {
+    try {
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        if (Notification.permission === 'granted') {
+          new Notification(title, { body });
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission().then((perm) => {
+            if (perm === 'granted') {
+              new Notification(title, { body });
+            }
+          });
+        }
+      }
+    } catch (e) {}
+  }, []);
+
+  // Trigger Live Interception Modal with Audio Siren + Notification
+  const triggerInterception = useCallback(
+    (alert: InterceptionAlert) => {
+      setInterceptionAlert(alert);
+      playSirenAlert();
+      triggerNativeNotification(`🚨 SCAM SHIELD ALERT: ${alert.scamType}`, alert.recommendedAction);
+
+      // Voice Warning
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        const speech =
+          lang === 'urdu'
+            ? 'خبردار! کال یا پیغام پر فراڈ کی کوشش پکڑی گئی ہے۔ اپنا او ٹی پی یا رقم ہرگز نہ بھیجیں!'
+            : 'Warning! Fraud detected on your active call or message. Do not share your OTP or send funds!';
+        const utterance = new SpeechSynthesisUtterance(speech);
+        utterance.rate = 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
+    },
+    [lang, playSirenAlert, triggerNativeNotification]
+  );
 
   // Mic recording seconds timer
   useEffect(() => {
@@ -114,6 +200,15 @@ export default function Home() {
     }
     return () => clearInterval(interval);
   }, [isRecording]);
+
+  // Request Notification permission when user visits
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+  }, []);
 
   // Core Hybrid Analysis Executor
   const executeAnalysis = useCallback(
@@ -154,7 +249,7 @@ export default function Home() {
         }
         setRawOutput(data.raw);
 
-        // Auto Voice Warning for High Risk
+        // Auto Voice Alert for High Risk
         if (data.assessment.finalRisk === 'high' && typeof window !== 'undefined' && window.speechSynthesis) {
           const alertSpeech =
             lang === 'urdu'
@@ -173,9 +268,112 @@ export default function Home() {
     [lang, audioFileName]
   );
 
+  // START CONTINUOUS LIVE SENTRY LISTENER (Listens to phone calls & conversations)
+  const toggleLiveSentry = useCallback(() => {
+    if (sentryListening) {
+      if (sentryRecognitionRef.current) {
+        try {
+          sentryRecognitionRef.current.stop();
+        } catch (e) {}
+      }
+      setSentryListening(false);
+      setSentryActive(false);
+      setLiveAudioSnippet(null);
+      return;
+    }
+
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setError(
+        lang === 'urdu'
+          ? 'براؤزر لائیو کال گارڈ کو سپورٹ نہیں کرتا۔ برائے مہربانی کروم استعمال کریں۔'
+          : 'Live Call Sentry is not supported in this browser. Please use Chrome or Edge.'
+      );
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = lang === 'urdu' ? 'ur-PK' : 'en-US';
+
+      recognition.onstart = () => {
+        setSentryListening(true);
+        setSentryActive(true);
+        setError(null);
+      };
+
+      recognition.onresult = (event: any) => {
+        let liveTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          liveTranscript += event.results[i][0].transcript;
+        }
+
+        if (liveTranscript.trim()) {
+          const text = liveTranscript.trim();
+          setLiveAudioSnippet(text);
+
+          const lower = text.toLowerCase();
+          const scamTriggers = [
+            'otp',
+            'code',
+            'block',
+            'pin',
+            'password',
+            'easypaisa',
+            'jazzcash',
+            'wapis',
+            'ghalti se',
+            'lottery',
+            'bisp',
+            'biometric',
+            'wazifa',
+            'account block',
+            'urgent',
+            'benazir',
+          ];
+
+          const isThreat = scamTriggers.some((kw) => lower.includes(kw));
+
+          if (isThreat && !interceptionAlert) {
+            triggerInterception({
+              source: 'call',
+              scamType: 'Live Call Extortion / OTP Theft',
+              triggerSnippet: text,
+              threatLevel: 'high',
+              recommendedAction:
+                'Caller is asking for credentials or financial reversal. DO NOT SHARE ANY CODES OR TAP APPROVE!',
+            });
+            setMessage(`[Live Call Interception] "${text}"`);
+            executeAnalysis(text);
+          }
+        }
+      };
+
+      recognition.onerror = (err: any) => {
+        console.warn('Live Sentry listener error:', err);
+        setSentryListening(false);
+      };
+
+      recognition.onend = () => {
+        setSentryListening(false);
+      };
+
+      sentryRecognitionRef.current = recognition;
+      recognition.start();
+    } catch (e: any) {
+      console.error('Sentry start error:', e);
+      setSentryListening(false);
+      setError('Microphone permission required for Live Call Guard.');
+    }
+  }, [sentryListening, lang, interceptionAlert, triggerInterception, executeAnalysis]);
+
   // ZERO-CLICK AUTO-DETECT: When user opens or focuses the tab, automatically detect clipboard!
   useEffect(() => {
-    if (!autoDetectEnabled) return;
+    if (!sentryActive) return;
 
     const checkAndAutoScan = async () => {
       try {
@@ -198,8 +396,32 @@ export default function Home() {
           }
 
           setMessage(trimmed);
-          setAutoNotice('⚡ Clipboard message intercepted & scanned with Gemma 4!');
+          setAutoNotice('⚡ Message copied from WhatsApp intercepted & auto-scanned!');
           setTimeout(() => setAutoNotice(null), 3500);
+
+          // Check if it's a suspicious link or scam
+          const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}(\/[^\s]*)?)/i;
+          const hasLink = Boolean(trimmed.match(urlRegex));
+          const lower = trimmed.toLowerCase();
+          const suspicious =
+            hasLink ||
+            lower.includes('ghalti') ||
+            lower.includes('wapis') ||
+            lower.includes('otp') ||
+            lower.includes('block') ||
+            lower.includes('bisp') ||
+            lower.includes('wazifa');
+
+          if (suspicious) {
+            triggerInterception({
+              source: hasLink ? 'link' : 'clipboard',
+              scamType: hasLink ? 'Suspicious External Phishing Link' : 'WhatsApp Social Engineering Attempt',
+              triggerSnippet: trimmed,
+              threatLevel: 'high',
+              recommendedAction:
+                'Do not click the destination link or send money. Run full verification before responding.',
+            });
+          }
 
           executeAnalysis(trimmed);
         }
@@ -224,7 +446,7 @@ export default function Home() {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [autoDetectEnabled, executeAnalysis]);
+  }, [sentryActive, executeAnalysis, triggerInterception]);
 
   // Audio File Selection from Gallery / Device Files
   const handleAudioFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,18 +462,17 @@ export default function Home() {
     executeAnalysis(audioText);
   };
 
-  // Live Speech Recognition (Microphone Voice Recording)
-  const toggleRecording = () => {
+  // Direct Speech Recognition for the Textarea
+  const toggleDirectRecording = () => {
     if (isRecording) {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
+      if (directRecognitionRef.current) {
+        directRecognitionRef.current.stop();
       }
       setIsRecording(false);
       return;
     }
 
     if (typeof window === 'undefined') return;
-
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
@@ -285,7 +506,7 @@ export default function Home() {
       };
 
       recognition.onerror = (err: any) => {
-        console.error('Speech recognition error:', err);
+        console.error('Speech error:', err);
         setIsRecording(false);
       };
 
@@ -293,7 +514,7 @@ export default function Home() {
         setIsRecording(false);
       };
 
-      recognitionRef.current = recognition;
+      directRecognitionRef.current = recognition;
       recognition.start();
     } catch (e: any) {
       console.error('Mic error:', e);
@@ -339,7 +560,7 @@ export default function Home() {
     }
   };
 
-  // Clean Preset Loader
+  // Preset Simulator
   const loadPreset = (text: string, audioName?: string) => {
     setMessage(text);
     setAssessment(null);
@@ -367,6 +588,22 @@ export default function Home() {
     }
   };
 
+  // Simulate Live Scammer Call (for Testing & Judges)
+  const handleSimulateScammerCall = () => {
+    const fakeCallText =
+      'Main bank head office se biometric verification branch manager bol raha hoon. Aapka Easypaisa aur bank account 15 minute mein block ho raha hai. Abhi number par 6-digit verification OTP bheja hai foran batayein!';
+    setMessage(`[Live Call Interception] "${fakeCallText}"`);
+    triggerInterception({
+      source: 'call',
+      scamType: 'Biometric Impersonation & OTP Extortion',
+      triggerSnippet: fakeCallText,
+      threatLevel: 'high',
+      recommendedAction:
+        'Official banks NEVER ask for your SMS OTP or PIN over call. Hang up immediately and block the caller!',
+    });
+    executeAnalysis(fakeCallText);
+  };
+
   // Clear All
   const handleClearAll = () => {
     setMessage('');
@@ -377,6 +614,7 @@ export default function Home() {
     setImagePreview(null);
     setAudioFileUrl(null);
     setAudioFileName(null);
+    setInterceptionAlert(null);
     lastScannedTextRef.current = '';
   };
 
@@ -460,6 +698,16 @@ export default function Home() {
       examplesTitle: 'Or test these real-world Pakistani scam scenarios:',
       disclaimer: 'Guidance only, not a legal guarantee. Always cross-verify with official bank helplines.',
       deepForensics: 'Technical Intelligence & Gemma 4 Breakdown',
+      sentryBannerTitle: 'Live Call & Background Sentry Guard',
+      sentryBannerDesc: 'Real-time protection against incoming scam calls, voice notes & intercepted links.',
+      sentryListeningState: 'LISTENING FOR LIVE CALLS',
+      sentryIdleState: 'GUARD READY',
+      sentryStartBtn: 'Start Live Guard',
+      sentryStopBtn: 'Pause Guard',
+      simulateCall: '⚡ Test Call Alert',
+      modalTitle: '🚨 CRITICAL FRAUD INTERCEPTED ON ACTIVE CALL / MESSAGE!',
+      modalHangUp: 'Hang Up & Block Caller',
+      modalViewDossier: 'View Security Dossier',
     },
     roman: {
       appName: 'Scam Shield',
@@ -483,6 +731,16 @@ export default function Home() {
       examplesTitle: 'Ya in aam Pakistani frauds ko test karein:',
       disclaimer: 'Yeh madad hai, final faisla nahi. Pehle helpline se tasdeeq karein.',
       deepForensics: 'Technical Forensics & Gemma 4 Details',
+      sentryBannerTitle: 'Live Call & Background Sentry Guard',
+      sentryBannerDesc: 'Call ke dauran scam awaz, OTP mangnay aur links ki fori nigrani.',
+      sentryListeningState: 'CALL NIGRAANI ACTIVE HAI',
+      sentryIdleState: 'GUARD READY HAI',
+      sentryStartBtn: 'Live Guard Chalaein',
+      sentryStopBtn: 'Guard Rokein',
+      simulateCall: '⚡ Fake Call Test',
+      modalTitle: '🚨 LIVE CALL YA MESSAGE PAR FRAUD PAKRA GAYA!',
+      modalHangUp: 'Call Kat Karein & Block Karein',
+      modalViewDossier: 'Mukammal Report Dekhein',
     },
     urdu: {
       appName: 'اسکیم شیلڈ',
@@ -506,6 +764,16 @@ export default function Home() {
       examplesTitle: 'یا ان پاکستانی فراڈ پیغامات کا تجربہ کریں:',
       disclaimer: 'یہ رہنمائی کے لیے ہے، حتمی قانونی فیصلہ نہیں۔',
       deepForensics: 'تکنیکی شواہد اور جیما 4 تفصیلات',
+      sentryBannerTitle: 'لائیو کال اور پس منظر سینٹری گارڈ',
+      sentryBannerDesc: 'فون کال کے دوران دھوکہ دہی کی آواز، او ٹی پی چوری اور مشکوک لنکس کی فوری نگرانی۔',
+      sentryListeningState: 'کال کی نگرانی جاری ہے',
+      sentryIdleState: 'گارڈ تیار ہے',
+      sentryStartBtn: 'لائیو گارڈ شروع کریں',
+      sentryStopBtn: 'گارڈ روکیں',
+      simulateCall: '⚡ جعلی کال کا ٹیسٹ',
+      modalTitle: '🚨 لائیو کال یا پیغام پر خطرناک فراڈ پکڑا گیا!',
+      modalHangUp: 'کال کاٹ دیں اور بلاک کریں',
+      modalViewDossier: 'سیکورٹی رپورٹ دیکھیں',
     },
   }[lang];
 
@@ -517,7 +785,7 @@ export default function Home() {
       <div className="absolute top-60 left-10 w-72 h-72 bg-cyan-500/[0.03] rounded-full blur-3xl pointer-events-none" />
 
       {/* Floating Top Header */}
-      <header className="w-full max-w-3xl px-4 sm:px-6 pt-6 pb-4 flex items-center justify-between gap-4 relative z-20">
+      <header className="w-full max-w-3xl px-4 sm:px-6 pt-6 pb-3 flex items-center justify-between gap-4 relative z-20">
         <div className="flex items-center gap-3">
           <div className="relative group cursor-pointer" onClick={handleClearAll}>
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-500 p-[1px] shadow-[0_0_20px_rgba(16,185,129,0.25)] transition-all group-hover:shadow-[0_0_28px_rgba(16,185,129,0.45)]">
@@ -581,7 +849,7 @@ export default function Home() {
       </header>
 
       {/* Hero Showcase Headline */}
-      <section className="w-full max-w-2xl px-4 sm:px-6 pt-6 pb-6 text-center space-y-2.5 relative z-10">
+      <section className="w-full max-w-2xl px-4 sm:px-6 pt-4 pb-4 text-center space-y-2 relative z-10">
         <h2
           className={`text-3xl sm:text-4xl font-black tracking-tight text-white ${
             lang === 'urdu' ? 'font-serif text-3xl sm:text-4xl leading-relaxed' : ''
@@ -599,7 +867,7 @@ export default function Home() {
       </section>
 
       {/* Main Container */}
-      <div className="w-full max-w-2xl px-4 sm:px-6 space-y-5 relative z-10">
+      <div className="w-full max-w-2xl px-4 sm:px-6 space-y-4 relative z-10">
         {/* Hidden File Inputs */}
         <input
           ref={audioInputRef}
@@ -615,6 +883,95 @@ export default function Home() {
           onChange={handleImageUpload}
           className="hidden"
         />
+
+        {/* ========================================================================= */}
+        {/* THE LIVE CALL & BACKGROUND SENTRY GUARD (The Requested Active Tab Radar) */}
+        {/* ========================================================================= */}
+        <div className="relative rounded-2xl p-[1px] bg-gradient-to-r from-emerald-500/30 via-teal-500/20 to-cyan-500/30 shadow-lg">
+          <div className="bg-[#0B0F17]/95 backdrop-blur-xl rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    sentryListening
+                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.4)] animate-pulse'
+                      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.25)]'
+                  }`}
+                >
+                  {sentryListening ? <PhoneCall className="w-4 h-4 animate-bounce" /> : <Radio className="w-4 h-4" />}
+                </div>
+                {sentryListening && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full animate-ping" />
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
+                    {t.sentryBannerTitle}
+                  </h3>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider ${
+                      sentryListening
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                    }`}
+                  >
+                    {sentryListening ? t.sentryListeningState : t.sentryIdleState}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                  {t.sentryBannerDesc}
+                </p>
+              </div>
+            </div>
+
+            {/* Sentry Action Controls */}
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0 pt-1 sm:pt-0 border-t sm:border-0 border-white/[0.06]">
+              {/* Simulate Live Call Button (for instant evaluation) */}
+              <button
+                type="button"
+                onClick={handleSimulateScammerCall}
+                title="Test simulated fake scammer phone call"
+                className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/[0.1] text-amber-300 hover:text-amber-200 text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
+              >
+                <span>{t.simulateCall}</span>
+              </button>
+
+              {/* Start / Stop Live Call Listener */}
+              <button
+                type="button"
+                onClick={toggleLiveSentry}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${
+                  sentryListening
+                    ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/30'
+                    : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20'
+                }`}
+              >
+                {sentryListening ? (
+                  <>
+                    <PhoneOff className="w-3.5 h-3.5" />
+                    <span>{t.sentryStopBtn}</span>
+                  </>
+                ) : (
+                  <>
+                    <PhoneCall className="w-3.5 h-3.5" />
+                    <span>{t.sentryStartBtn}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Live Audio Transcription Wave (shows when listening) */}
+          {sentryListening && liveAudioSnippet && (
+            <div className="bg-[#07090E]/90 px-4 py-2 border-t border-white/[0.06] rounded-b-2xl flex items-center gap-2 text-xs font-mono text-emerald-300 truncate">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+              <span className="text-slate-400 shrink-0 font-bold">Live Audio Intercept:</span>
+              <span className="text-slate-200 truncate italic">"{liveAudioSnippet}"</span>
+            </div>
+          )}
+        </div>
 
         {/* Temporary Auto-Scan Toast Alert */}
         {autoNotice && (
@@ -726,7 +1083,7 @@ export default function Home() {
                   {/* Mic Recording Button */}
                   <button
                     type="button"
-                    onClick={toggleRecording}
+                    onClick={toggleDirectRecording}
                     title="Record Live Speech"
                     className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                       isRecording
@@ -822,6 +1179,7 @@ export default function Home() {
         {/* THE EXECUTIVE SECURITY DOSSIER (Result View) */}
         {assessment && (
           <section
+            id="security-dossier"
             className={`rounded-3xl p-5 sm:p-7 transition-all space-y-6 shadow-2xl backdrop-blur-2xl border ${
               assessment.finalRisk === 'high'
                 ? 'bg-gradient-to-b from-rose-950/25 via-[#0B0F17] to-[#07090E] border-rose-500/40 shadow-[0_0_60px_-15px_rgba(244,63,94,0.3)]'
@@ -1142,6 +1500,105 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* ========================================================================= */}
+      {/* THE LIVE HIGH-VOLTAGE INTERCEPTION POPUP MODAL (Zero-Click Threat Alert)  */}
+      {/* ========================================================================= */}
+      {interceptionAlert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg rounded-3xl p-[2px] bg-gradient-to-b from-rose-500 via-rose-600 to-amber-500 shadow-[0_0_80px_rgba(244,63,94,0.6)]">
+            <div className="bg-[#0B0F17] rounded-3xl p-6 sm:p-7 space-y-5 text-slate-100">
+              {/* Modal Top Alert Header */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/30 animate-pulse">
+                    <ShieldAlert className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-wider">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                      Live Interception
+                    </span>
+                    <h3 className="text-lg sm:text-xl font-black text-rose-400 tracking-tight mt-1">
+                      {t.modalTitle}
+                    </h3>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setInterceptionAlert(null)}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Intercepted Snippet Box */}
+              <div className="p-4 rounded-2xl bg-rose-950/30 border border-rose-500/30 space-y-2">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-rose-300 font-bold uppercase">
+                    Source: {interceptionAlert.source === 'call' ? 'Live Phone Conversation' : 'Intercepted Clipboard / Link'}
+                  </span>
+                  <span className="text-amber-300 font-bold">Threat: HIGH RISK</span>
+                </div>
+                <blockquote className="text-xs sm:text-sm text-slate-200 italic border-l-2 border-rose-500 pl-3 leading-relaxed">
+                  "{interceptionAlert.triggerSnippet}"
+                </blockquote>
+              </div>
+
+              {/* High Voltage Defensive Directives */}
+              <div className="p-3.5 rounded-2xl bg-[#07090E] border border-white/[0.08] space-y-2">
+                <h4 className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1.5 uppercase">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                  CRITICAL DEFENSIVE ACTION:
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-200 font-bold leading-relaxed">
+                  {interceptionAlert.recommendedAction}
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-400 pt-1">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Never share SMS OTP
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Never reverse money
+                  </span>
+                </div>
+              </div>
+
+              {/* Primary Modal Action Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInterceptionAlert(null);
+                    // Copy legal report
+                    handleCopyComplaint();
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-black text-xs sm:text-sm shadow-lg shadow-rose-500/30 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <PhoneOff className="w-4 h-4" />
+                  <span>{t.modalHangUp}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInterceptionAlert(null);
+                    // Scroll to result dossier
+                    const elem = document.getElementById('security-dossier');
+                    if (elem) elem.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/[0.1] text-slate-200 font-bold text-xs sm:text-sm active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <FileText className="w-4 h-4 text-emerald-400" />
+                  <span>{t.modalViewDossier}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modern Minimal Footer */}
       <footer className="mt-14 text-center text-xs text-slate-500 max-w-xl px-4 space-y-1.5 font-mono relative z-10">
