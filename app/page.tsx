@@ -109,9 +109,8 @@ export default function Home() {
     const audioUrl = URL.createObjectURL(file);
     setAudioFileUrl(audioUrl);
 
-    // Provide contextual text for the audio note so Gemma 4 evaluates it accurately
     setMessage(
-      `[WhatsApp Voice Note: ${file.name}] "Asalam-o-Alaikum, urgent biometric verification call. Aapke number par OTP bheja gaya hai foran batayein warna account block ho jayega."`
+      `[Voice Note: ${file.name}] "Asalam-o-Alaikum, urgent biometric verification call. Aapke number par OTP bheja gaya hai foran batayein warna account block ho jayega."`
     );
     setAssessment(null);
     setLinkTraceResult(null);
@@ -321,15 +320,15 @@ export default function Home() {
   const t = {
     english: {
       heroTitle: 'Scam Shield Pakistan',
-      heroSubtitle: 'AI-Powered Cyber Fraud & Social Engineering Defense using Google Gemma 4.',
+      heroSubtitle: 'AI-Powered Cyber Fraud Defense for Pakistan • Google Gemma 4',
       tabText: 'SMS / Text',
       tabLink: 'Check Link',
       tabVoice: 'Voice Note / Call',
       tabScreenshot: 'Screenshot (OCR)',
       placeholderText: 'Paste suspicious SMS, WhatsApp message, or email here...',
-      placeholderLink: 'Paste suspicious link (e.g. bit.ly/bisp-cash or http://easypaisa-reward.xyz/login) to unmask real destination...',
-      placeholderVoice: 'Click microphone to record, upload an audio note from files/gallery, or select a sample call below...',
-      checkBtn: 'Check Security (Verify with Gemma 4)',
+      placeholderLink: 'Paste suspicious link (e.g. bit.ly/bisp-cash or easypaisa-reward.xyz) to trace destination...',
+      placeholderVoice: 'Click microphone to record, upload an audio note, or pick a sample call below...',
+      checkBtn: 'Check Security with Gemma 4',
       checkingBtn: 'Gemma 4 is Analyzing...',
       highRisk: 'High Risk (Bohat Khatarnak)',
       medRisk: 'Caution Advised (Ehtiyat Karein)',
@@ -337,12 +336,12 @@ export default function Home() {
       highDesc: 'Critical fraud indicators, financial coercion, or credential theft attempt detected.',
       medDesc: 'Suspicious elements identified. Do not send money or click links without verbal verification.',
       lowDesc: 'No obvious red flags found. Never assume any unsolicited message is 100% safe.',
-      listenBtn: '🔊 Listen Aloud',
-      copyComplaint: '📋 Copy FIA Complaint',
-      reasonsTitle: 'Forensic Reasons (Why Flagged):',
+      listenBtn: 'Listen Aloud',
+      copyComplaint: 'Copy FIA Complaint',
+      reasonsTitle: 'Forensic Evidence & Reasons:',
       stepsTitle: 'Recommended Protective Actions:',
-      exampleLabel: '⚡ 1-Click Quick Demo Presets (Click to test model):',
-      disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / This is guidance, not a guarantee.',
+      exampleLabel: 'Quick Demo Presets (Click to test):',
+      disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / Guidance only, not a legal guarantee.',
     },
     roman: {
       heroTitle: 'Scam Shield Pakistan',
@@ -352,8 +351,8 @@ export default function Home() {
       tabVoice: 'Voice Note / Call',
       tabScreenshot: 'Screenshot (OCR)',
       placeholderText: 'Mashkook SMS, WhatsApp message ya link yahan paste karein...',
-      placeholderLink: 'Mashkook link yahan paste karein (e.g. bit.ly/bisp-cash ya http://easypaisa-reward.xyz/login)...',
-      placeholderVoice: 'Mic se bolain ya files/gallery se voice note upload karein, ya neeche se sample call chunein...',
+      placeholderLink: 'Mashkook link yahan paste karein (e.g. bit.ly/bisp-cash ya easypaisa-reward.xyz)...',
+      placeholderVoice: 'Mic se bolain ya files se voice note upload karein, ya neeche se sample call chunein...',
       checkBtn: 'Check Message (Jaanchein)',
       checkingBtn: 'Gemma 4 Jaanch Raha Hai...',
       highRisk: 'Bohat Khatarnak (High Risk)',
@@ -362,12 +361,12 @@ export default function Home() {
       highDesc: 'Is message ya call mein 90%+ fraud ya raqam churanay ke qawi asarat hain.',
       medDesc: 'Kuch mashkook nishaniyan mili hain. Baghair tasdeeq koi amal na karein.',
       lowDesc: 'Message mein fori scam signs nahi mile, lekin hamesha hoshiyar rahein.',
-      listenBtn: '🔊 Suniye (Listen)',
-      copyComplaint: '📋 Copy FIA Complaint',
+      listenBtn: 'Suniye (Listen)',
+      copyComplaint: 'Copy FIA Complaint',
       reasonsTitle: 'Khatray Ki Wajuhat (Why Flagged):',
       stepsTitle: 'Agle Hifazati Iqdamat (Next Steps):',
-      exampleLabel: '⚡ 1-Click Quick Demo Presets (Click karke model test karein):',
-      disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / This is guidance, not a guarantee.',
+      exampleLabel: 'Quick Demo Presets (Click karke check karein):',
+      disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / Guidance only, not a legal guarantee.',
     },
     urdu: {
       heroTitle: 'اسکیم شیلڈ پاکستان',
@@ -378,7 +377,7 @@ export default function Home() {
       tabScreenshot: 'اسکرین شاٹ (OCR)',
       placeholderText: 'مشکوک ایس ایم ایس یا واٹس ایپ پیغام یہاں درج کریں...',
       placeholderLink: 'مشکوک لنک یہاں درج کریں تاکہ معلوم ہو سکے کہ یہ درحقیقت کہاں لے جاتا ہے...',
-      placeholderVoice: 'مائیک سے بولیں یا گیلری سے وائس نوٹ اپلوڈ کریں یا نیچے سے سیمپل کال منتخب کریں...',
+      placeholderVoice: 'مائیک سے بولیں یا وائس نوٹ اپلوڈ کریں یا نیچے سے سیمپل کال منتخب کریں...',
       checkBtn: 'فوری جانچ کریں (Verify)',
       checkingBtn: 'جیما 4 جائزہ لے رہا ہے...',
       highRisk: 'انتہائی خطرناک (ہائی رسک)',
@@ -387,40 +386,53 @@ export default function Home() {
       highDesc: 'اس پیغام یا کال میں مالی فراڈ یا رقم چرانے کے واضح شواہد موجود ہیں۔',
       medDesc: 'کچھ مشکوک علامات پائی گئی ہیں۔ ہیلپ لائن کی تصدیق کے بغیر کوئی عمل نہ کریں۔',
       lowDesc: 'کوئی فوری خطرہ ظاہر نہیں ہوا، مگر ہمیشہ محتاط رہیں۔',
-      listenBtn: '🔊 سنیں (صوتی انتباہ)',
-      copyComplaint: '📋 ایف آئی اے شکایت کاپی کریں',
+      listenBtn: 'سنیں (صوتی انتباہ)',
+      copyComplaint: 'ایف آئی اے شکایت کاپی کریں',
       reasonsTitle: 'خطرے کی وجوہات (شواہد):',
       stepsTitle: 'حفاظتی اقدامات (کیا کریں):',
-      exampleLabel: '⚡ فوری ڈیمو کے نمونے (ماڈل ٹیسٹ کرنے کے لیے کلک کریں):',
+      exampleLabel: 'فوری نمونے (ماڈل ٹیسٹ کرنے کے لیے کلک کریں):',
       disclaimer: '⚠️ یہ رہنمائی کے لیے ہے، حتمی قانونی فیصلہ نہیں۔',
     },
   }[lang];
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center selection:bg-emerald-500 selection:text-slate-950 pb-16 font-sans">
+    <main className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col items-center selection:bg-emerald-500 selection:text-slate-950 pb-16 font-sans relative overflow-x-hidden">
+      {/* Subtle Background Glows */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-72 bg-gradient-to-b from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none" />
+
       {/* Top Header & Clean Language Switcher */}
-      <header className="w-full max-w-3xl px-4 pt-8 pb-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10 shrink-0">
-            <ShieldAlert className="w-6 h-6" />
+      <header className="w-full max-w-3xl px-4 pt-10 pb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 p-[1px] shadow-lg shadow-emerald-500/20 shrink-0">
+            <div className="w-full h-full bg-slate-950 rounded-2xl flex items-center justify-center text-emerald-400">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
           </div>
           <div>
-            <h1 className={`text-2xl font-black text-white tracking-tight ${lang === 'urdu' ? 'font-serif' : ''}`}>
-              {t.heroTitle}
-            </h1>
-            <p className={`text-xs text-slate-400 ${lang === 'urdu' ? 'font-serif' : ''}`}>
+            <div className="flex items-center gap-2">
+              <h1 className={`text-2xl font-black text-white tracking-tight ${lang === 'urdu' ? 'font-serif' : ''}`}>
+                {t.heroTitle}
+              </h1>
+              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Gemma 4
+              </span>
+            </div>
+            <p className={`text-xs text-slate-400 mt-0.5 ${lang === 'urdu' ? 'font-serif' : ''}`}>
               {t.heroSubtitle}
             </p>
           </div>
         </div>
 
         {/* 3-Way Language Toggle */}
-        <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 shadow-inner shrink-0">
+        <div className="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 shadow-inner shrink-0">
           <button
             type="button"
             onClick={() => setLang('english')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              lang === 'english' ? 'bg-emerald-500 text-slate-950 shadow-sm font-bold' : 'text-slate-400 hover:text-slate-200'
+              lang === 'english'
+                ? 'bg-emerald-500 text-slate-950 shadow-sm font-bold'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             English
@@ -429,7 +441,9 @@ export default function Home() {
             type="button"
             onClick={() => setLang('roman')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              lang === 'roman' ? 'bg-emerald-500 text-slate-950 shadow-sm font-bold' : 'text-slate-400 hover:text-slate-200'
+              lang === 'roman'
+                ? 'bg-emerald-500 text-slate-950 shadow-sm font-bold'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             Roman Urdu
@@ -438,7 +452,9 @@ export default function Home() {
             type="button"
             onClick={() => setLang('urdu')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              lang === 'urdu' ? 'bg-emerald-500 text-slate-950 shadow-sm font-serif' : 'text-slate-400 hover:text-slate-200'
+              lang === 'urdu'
+                ? 'bg-emerald-500 text-slate-950 shadow-sm font-serif'
+                : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             اردو
@@ -447,69 +463,69 @@ export default function Home() {
       </header>
 
       {/* Main Single-Card Container */}
-      <div className="w-full max-w-3xl px-4 space-y-5">
+      <div className="w-full max-w-3xl px-4 space-y-4 relative z-10">
         {/* Clean 4-Way Mode Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-slate-900/90 rounded-2xl border border-slate-800 shadow-lg">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-slate-900/90 rounded-2xl border border-slate-800 shadow-lg backdrop-blur-md">
           <button
             type="button"
             onClick={() => setInputMode('text')}
-            className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               inputMode === 'text'
                 ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
             }`}
           >
-            <FileText className="w-4 h-4" />
+            <FileText className="w-3.5 h-3.5" />
             <span>{t.tabText}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setInputMode('link')}
-            className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               inputMode === 'link'
                 ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
             }`}
           >
-            <LinkIcon className="w-4 h-4" />
+            <LinkIcon className="w-3.5 h-3.5" />
             <span>{t.tabLink}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setInputMode('voice')}
-            className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               inputMode === 'voice'
                 ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
             }`}
           >
-            <Mic className="w-4 h-4" />
+            <Mic className="w-3.5 h-3.5" />
             <span>{t.tabVoice}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setInputMode('screenshot')}
-            className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               inputMode === 'screenshot'
                 ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
             }`}
           >
-            <ImageIcon className="w-4 h-4" />
+            <ImageIcon className="w-3.5 h-3.5" />
             <span>{t.tabScreenshot}</span>
           </button>
         </div>
 
         {/* Input Card */}
-        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-2xl backdrop-blur-md space-y-4">
+        <div className="bg-slate-900/70 border border-slate-800/90 rounded-2xl p-5 sm:p-6 shadow-2xl backdrop-blur-md space-y-4">
           {inputMode !== 'screenshot' ? (
-            <form onSubmit={handleCheck} className="space-y-4">
+            <form onSubmit={handleCheck} className="space-y-3.5">
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="main-input" className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="main-input" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
                     {inputMode === 'link' ? t.tabLink : inputMode === 'voice' ? t.tabVoice : t.tabText}
                   </label>
                   {message && (
@@ -544,7 +560,7 @@ export default function Home() {
                         : t.placeholderText
                     }
                     dir={lang === 'urdu' ? 'rtl' : 'ltr'}
-                    className={`w-full p-4 rounded-xl bg-slate-950 border border-slate-700/80 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/80 focus:border-transparent text-sm sm:text-base transition-all resize-y leading-relaxed ${
+                    className={`w-full p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/60 focus:border-transparent text-sm sm:text-base transition-all resize-y leading-relaxed ${
                       lang === 'urdu' ? 'font-serif' : 'font-sans'
                     }`}
                     required
@@ -556,7 +572,7 @@ export default function Home() {
                       {isRecording && (
                         <span className="text-xs text-rose-400 font-mono flex items-center gap-1.5 animate-pulse bg-rose-950/60 px-2 py-1 rounded-md border border-rose-500/30">
                           <span className="w-2 h-2 rounded-full bg-rose-500" />
-                          <span>Listening: {recordingSeconds}s</span>
+                          <span>{recordingSeconds}s</span>
                         </span>
                       )}
                       <button
@@ -569,16 +585,16 @@ export default function Home() {
                             : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950'
                         }`}
                       >
-                        {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                        {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                       </button>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* VOICE MODE: Audio File Upload + Realistic Call Scenarios */}
+              {/* VOICE MODE: Clean Audio Controls */}
               {inputMode === 'voice' && (
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-3 text-xs">
                   <input
                     ref={audioInputRef}
                     type="file"
@@ -587,10 +603,10 @@ export default function Home() {
                     className="hidden"
                   />
 
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
-                    <span className="font-bold text-slate-200 flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                    <span className="text-slate-300 font-semibold flex items-center gap-1.5">
                       <Music className="w-4 h-4 text-emerald-400" />
-                      Voice Input Channels:
+                      Audio Source:
                     </span>
 
                     <div className="flex items-center gap-2">
@@ -604,7 +620,7 @@ export default function Home() {
                         }`}
                       >
                         <Mic className="w-3.5 h-3.5" />
-                        <span>{isRecording ? 'Stop Recording' : 'Record Mic'}</span>
+                        <span>{isRecording ? 'Stop Mic' : 'Record Mic'}</span>
                       </button>
 
                       <button
@@ -613,73 +629,64 @@ export default function Home() {
                         className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
                       >
                         <Upload className="w-3.5 h-3.5" />
-                        <span>Upload Audio File / Voice Note</span>
+                        <span>Choose Audio File</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* Audio Player preview if a file was uploaded */}
                   {audioFileUrl && (
-                    <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 truncate">
-                        <Music className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span className="text-slate-200 font-mono truncate">{audioFileName}</span>
-                      </div>
-                      <audio controls src={audioFileUrl} className="h-8 max-w-full sm:max-w-xs" />
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                      <span className="text-slate-300 font-mono text-[11px] truncate">{audioFileName}</span>
+                      <audio controls src={audioFileUrl} className="h-7 max-w-full sm:max-w-xs" />
                     </div>
                   )}
 
-                  {/* 1-Click Pakistani Voice Call Presets */}
-                  <div className="pt-1 space-y-1.5">
-                    <span className="text-[11px] font-mono text-slate-400">
-                      Or select simulated Pakistani voice call scenarios:
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          loadPreset(
-                            'Asalam-o-Alaikum, main JazzCash head office se bol raha hoon. Aapka account biometric expiry ki waja se block hone laga hai. Aapke mobile par 4 digit ka OTP aya hai, fori batayein taakay account unblock ho sakay.',
-                            'voice',
-                            'Fake-JazzCash-Call.mp3'
-                          )
-                        }
-                        className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-left border border-slate-800 text-slate-300 space-y-1 transition-all cursor-pointer"
-                      >
-                        <div className="font-semibold text-rose-300">📞 Fake Bank/Wallet Call</div>
-                        <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">"Head office se bol raha hoon, OTP dein..."</p>
-                      </button>
+                  {/* 2 Quick Voice Call Scenarios */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        loadPreset(
+                          'Asalam-o-Alaikum, main JazzCash head office se bol raha hoon. Aapka account biometric expiry ki waja se block hone laga hai. Aapke mobile par 4 digit ka OTP aya hai, fori batayein taakay account unblock ho sakay.',
+                          'voice',
+                          'Fake-JazzCash-Call.mp3'
+                        )
+                      }
+                      className="p-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-left border border-slate-800/80 text-slate-300 transition-all cursor-pointer"
+                    >
+                      <div className="font-semibold text-rose-300 text-xs">📞 Fake Bank Call Sample</div>
+                      <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">"Head office se bol raha hoon, OTP dein..."</p>
+                    </button>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          loadPreset(
-                            'Bhai khuda ke waste paise wapis bhej dein. Ammi hospital mein hain, ghalti se 30,000 aapke Easypaisa par bhej diye hain. Khuda aapka bhala karega wapis bhej dein.',
-                            'voice',
-                            'Accidental-Reversal-Note.opus'
-                          )
-                        }
-                        className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-left border border-slate-800 text-slate-300 space-y-1 transition-all cursor-pointer"
-                      >
-                        <div className="font-semibold text-amber-300">🎙️ Accidental Transfer Voice Note</div>
-                        <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">"Ghalti se 30,000 bhej diye wapis karein..."</p>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        loadPreset(
+                          'Bhai khuda ke waste paise wapis bhej dein. Ammi hospital mein hain, ghalti se 30,000 aapke Easypaisa par bhej diye hain. Khuda aapka bhala karega wapis bhej dein.',
+                          'voice',
+                          'Accidental-Reversal-Note.opus'
+                        )
+                      }
+                      className="p-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-left border border-slate-800/80 text-slate-300 transition-all cursor-pointer"
+                    >
+                      <div className="font-semibold text-amber-300 text-xs">🎙️ Accidental Transfer Voice Note</div>
+                      <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">"Ghalti se 30,000 bhej diye wapis karein..."</p>
+                    </button>
                   </div>
                 </div>
               )}
 
-              {/* Action Button */}
+              {/* Primary Action Button */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
-                <span className="text-xs text-slate-400 flex items-center gap-1.5 font-mono">
+                <span className="text-[11px] text-slate-400 flex items-center gap-1.5 font-mono">
                   <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-                  Google Gemma 4 (`gemma-4-26b-a4b-it`)
+                  Gemma 4 (26B-A4B-IT) + Security Rules
                 </span>
 
                 <button
                   type="submit"
                   disabled={loading || !message.trim()}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-800 text-slate-950 disabled:text-slate-500 font-bold shadow-lg shadow-emerald-500/25 transition-all cursor-pointer disabled:cursor-not-allowed text-sm"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 disabled:from-slate-800 disabled:to-slate-800 text-slate-950 disabled:text-slate-500 font-black shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all cursor-pointer disabled:cursor-not-allowed text-sm"
                 >
                   {loading ? (
                     <>
@@ -708,23 +715,23 @@ export default function Home() {
 
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-700 hover:border-emerald-500/80 rounded-2xl p-8 text-center cursor-pointer transition-all bg-slate-950/60 hover:bg-slate-900/60 space-y-3"
+                className="border-2 border-dashed border-slate-700/80 hover:border-emerald-500/80 rounded-2xl p-8 text-center cursor-pointer transition-all bg-slate-950/40 hover:bg-slate-900/60 space-y-3"
               >
                 <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  <Upload className="w-6 h-6" />
+                  <Upload className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-200">
                     Upload SMS or WhatsApp Screenshot
                   </p>
                   <p className="text-xs text-slate-400 mt-1 font-mono">
-                    In-browser OCR extracts text directly into the Gemma 4 detection engine.
+                    OCR extracts text from image directly into the analysis engine.
                   </p>
                 </div>
               </div>
 
               {ocrLoading && (
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
                   <div className="flex items-center justify-between text-xs text-slate-300">
                     <span className="flex items-center gap-2 font-mono">
                       <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
@@ -732,7 +739,7 @@ export default function Home() {
                     </span>
                     <span className="font-mono text-emerald-400 font-bold">{ocrProgress}%</span>
                   </div>
-                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
                     <div
                       className="bg-emerald-500 h-full transition-all duration-300"
                       style={{ width: `${ocrProgress}%` }}
@@ -746,18 +753,18 @@ export default function Home() {
                   <img
                     src={imagePreview}
                     alt="Uploaded screenshot"
-                    className="w-16 h-16 object-cover rounded-lg border border-slate-700"
+                    className="w-14 h-14 object-cover rounded-lg border border-slate-700"
                   />
-                  <div className="text-xs space-y-1">
-                    <p className="font-semibold text-slate-200">Screenshot Loaded</p>
-                    <p className="text-slate-400">Text extracted. Click SMS / Text tab above to inspect!</p>
+                  <div className="text-xs space-y-0.5">
+                    <p className="font-semibold text-slate-200">Screenshot Processed</p>
+                    <p className="text-slate-400">Text loaded into editor. Switch to Text tab to verify!</p>
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* 3 Clear Clickable Examples */}
+          {/* 3 Clickable Example Presets */}
           <div className="pt-3 border-t border-slate-800/80">
             <p className="text-xs text-slate-400 mb-2 font-mono flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
@@ -772,13 +779,13 @@ export default function Home() {
                     'text'
                   )
                 }
-                className="p-2.5 text-left rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 text-xs space-y-1 group transition-all cursor-pointer"
+                className="p-2.5 text-left rounded-xl bg-slate-950/70 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-xs space-y-1 transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-200 group-hover:text-emerald-400">Easypaisa Scam</span>
-                  <span className="text-[10px] text-rose-400 font-mono">🔴 Scam</span>
+                  <span className="w-2 h-2 rounded-full bg-rose-500" />
                 </div>
-                <p className="text-slate-400 line-clamp-1 text-[11px] font-mono">0300 se 25,000 ghalti se bhej diye...</p>
+                <p className="text-slate-400 line-clamp-1 text-[11px] font-mono">0300 se 25,000 ghalti se bhej...</p>
               </button>
 
               <button
@@ -789,11 +796,11 @@ export default function Home() {
                     'link'
                   )
                 }
-                className="p-2.5 text-left rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 text-xs space-y-1 group transition-all cursor-pointer"
+                className="p-2.5 text-left rounded-xl bg-slate-950/70 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-xs space-y-1 transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-200 group-hover:text-emerald-400">Fake BISP Link</span>
-                  <span className="text-[10px] text-amber-400 font-mono">🟡 Link</span>
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
                 </div>
                 <p className="text-slate-400 line-clamp-1 text-[11px] font-mono">bisp-wazifa-claim.xyz/verify</p>
               </button>
@@ -806,11 +813,11 @@ export default function Home() {
                     'text'
                   )
                 }
-                className="p-2.5 text-left rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 text-xs space-y-1 group transition-all cursor-pointer"
+                className="p-2.5 text-left rounded-xl bg-slate-950/70 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-xs space-y-1 transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-200 group-hover:text-emerald-400">Genuine Bank OTP</span>
-                  <span className="text-[10px] text-emerald-400 font-mono">🟢 Clean</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 </div>
                 <p className="text-slate-400 line-clamp-1 text-[11px] font-mono">HBL Alert: Your OTP is 591823...</p>
               </button>
@@ -834,14 +841,14 @@ export default function Home() {
           <section
             className={`border rounded-2xl p-5 sm:p-7 transition-all space-y-5 shadow-2xl backdrop-blur-md ${
               assessment.finalRisk === 'high'
-                ? 'bg-rose-950/30 border-rose-500/60'
+                ? 'bg-gradient-to-b from-rose-950/30 to-slate-900/80 border-rose-500/50 shadow-rose-950/30'
                 : assessment.finalRisk === 'medium'
-                ? 'bg-amber-950/30 border-amber-500/60'
-                : 'bg-emerald-950/30 border-emerald-500/60'
+                ? 'bg-gradient-to-b from-amber-950/30 to-slate-900/80 border-amber-500/50 shadow-amber-950/30'
+                : 'bg-gradient-to-b from-emerald-950/30 to-slate-900/80 border-emerald-500/50 shadow-emerald-950/30'
             }`}
           >
             {/* Header: Traffic Light Status */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-700/60">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
               <div className="flex items-center gap-3.5">
                 {assessment.finalRisk === 'high' ? (
                   <ShieldAlert className="w-9 h-9 text-rose-400 shrink-0" />
@@ -882,7 +889,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={handleSpeakVerdict}
-                  className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-emerald-400 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-emerald-400 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
                 >
                   <Volume2 className="w-3.5 h-3.5" />
                   <span>{t.listenBtn}</span>
@@ -890,7 +897,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={handleCopyComplaint}
-                  className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
                 >
                   {copiedComplaint ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedComplaint ? 'Copied!' : t.copyComplaint}</span>
@@ -900,9 +907,9 @@ export default function Home() {
 
             {/* Pre-Click Destination Tracker (Shows where links actually go) */}
             {linkTraceResult && (
-              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-700 space-y-2 text-xs font-mono">
+              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-700/80 space-y-2 text-xs font-mono">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-200 flex items-center gap-1.5 uppercase">
+                  <span className="font-bold text-slate-200 flex items-center gap-1.5 uppercase tracking-wider">
                     <LinkIcon className="w-3.5 h-3.5 text-emerald-400" />
                     Destination URL Unmasked:
                   </span>
@@ -937,7 +944,7 @@ export default function Home() {
                 <span className="text-slate-300 font-bold">Scam Type: {assessment.scamType}</span>
                 <span className="text-slate-400">Threat Score: {assessment.threatScore}%</span>
               </div>
-              <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+              <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
                 <div
                   className={`h-full transition-all duration-500 ${
                     assessment.finalRisk === 'high'
@@ -962,7 +969,7 @@ export default function Home() {
                   <li
                     key={i}
                     dir={lang === 'urdu' ? 'rtl' : 'ltr'}
-                    className={`flex items-start gap-2.5 text-xs sm:text-sm text-slate-200 bg-slate-900/70 p-3 rounded-xl border border-slate-800 ${
+                    className={`flex items-start gap-2.5 text-xs sm:text-sm text-slate-200 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 ${
                       lang === 'urdu' ? 'font-serif text-sm' : ''
                     }`}
                   >
@@ -984,7 +991,7 @@ export default function Home() {
                   <li
                     key={i}
                     dir={lang === 'urdu' ? 'rtl' : 'ltr'}
-                    className={`flex items-start gap-2.5 text-xs sm:text-sm text-slate-200 bg-slate-900/70 p-3 rounded-xl border border-slate-800 ${
+                    className={`flex items-start gap-2.5 text-xs sm:text-sm text-slate-200 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 ${
                       lang === 'urdu' ? 'font-serif' : ''
                     }`}
                   >
@@ -997,11 +1004,11 @@ export default function Home() {
 
             {/* Layer Breakdown: Gemma 4 AI vs Heuristic Rules */}
             <div className="pt-3 border-t border-slate-800 text-xs space-y-2">
-              <span className="font-bold uppercase tracking-wider text-slate-400 text-[11px] block">
+              <span className="font-bold uppercase tracking-wider text-slate-400 text-[11px] block font-mono">
                 Dual-Layer Security Breakdown:
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
                   <span className="font-bold text-emerald-300 flex items-center gap-1.5">
                     <Cpu className="w-3.5 h-3.5" />
                     Google Gemma 4 AI
@@ -1014,7 +1021,7 @@ export default function Home() {
                   </p>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1">
                   <span className="font-bold text-sky-300 flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5" />
                     Deterministic Rules Engine
@@ -1023,7 +1030,7 @@ export default function Home() {
                     Violations: <strong>{assessment.layerBreakdown.rulesHighlights.length} rules triggered</strong>
                   </p>
                   <p className="text-[11px] text-slate-400 truncate">
-                    {assessment.layerBreakdown.rulesHighlights[0] || 'Zero known blacklisted keywords found.'}
+                    {assessment.layerBreakdown.rulesHighlights[0] || 'Zero blacklisted keywords found.'}
                   </p>
                 </div>
               </div>
@@ -1031,7 +1038,7 @@ export default function Home() {
 
             {/* Collapsible Raw JSON for Judges Proof */}
             {rawOutput && (
-              <div className="pt-2 border-t border-slate-700/60">
+              <div className="pt-2 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowRaw(!showRaw)}
@@ -1055,7 +1062,7 @@ export default function Home() {
       </div>
 
       {/* Clean Footer */}
-      <footer className="mt-12 text-center text-xs text-slate-500 max-w-xl px-4 space-y-1 font-mono">
+      <footer className="mt-12 text-center text-xs text-slate-500 max-w-xl px-4 space-y-1 font-mono relative z-10">
         <p className={lang === 'urdu' ? 'font-serif' : ''}>{t.disclaimer}</p>
         <p className="text-[11px] text-slate-600">
           Scam Shield Pakistan • Google Gemma 4 (26B-A4B-IT) • Apache 2.0 • MIT Open Source
