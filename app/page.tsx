@@ -139,6 +139,19 @@ export default function Home() {
   // Background Auto-Scan Handler
   const triggerAutoScan = async (textToScan: string) => {
     if (!textToScan.trim() || textToScan === lastScannedText.current) return;
+
+    // Filter out internal legal complaints so they are NEVER dumped into input box or scanned
+    if (
+      textToScan.includes('NR3C') ||
+      textToScan.includes('ایف آئی اے') ||
+      textToScan.includes('بخدمت جناب') ||
+      textToScan.includes('Federal Investigation Agency') ||
+      textToScan.includes('PK-SOC-') ||
+      textToScan.includes('INCIDENT PARTICULARS')
+    ) {
+      return;
+    }
+
     lastScannedText.current = textToScan;
     setMessage(textToScan);
     setClipboardNotice('Clipboard content auto-detected! Scanning with Gemma 4...');
@@ -209,8 +222,23 @@ export default function Home() {
       try {
         if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
           const text = await navigator.clipboard.readText();
-          if (text && text.trim().length > 6 && text.trim() !== lastScannedText.current) {
-            triggerAutoScan(text.trim());
+          if (!text || text.trim().length <= 6) return;
+          const trimmed = text.trim();
+
+          // CRITICAL SAFEGUARD: Never scan or dump our own generated FIA legal complaint drafts!
+          if (
+            trimmed.includes('NR3C') ||
+            trimmed.includes('ایف آئی اے') ||
+            trimmed.includes('بخدمت جناب') ||
+            trimmed.includes('Federal Investigation Agency') ||
+            trimmed.includes('PK-SOC-') ||
+            trimmed.includes('INCIDENT PARTICULARS')
+          ) {
+            return;
+          }
+
+          if (trimmed !== lastScannedText.current) {
+            triggerAutoScan(trimmed);
           }
         }
       } catch (err) {
@@ -457,9 +485,23 @@ export default function Home() {
       lang === 'urdu' ? 'urdu' : 'roman'
     );
 
+    // Prevent auto-scan sentry from treating this copied complaint as a new incoming scam
+    lastScannedText.current = draft;
     navigator.clipboard.writeText(draft);
     setCopiedComplaint(true);
     setTimeout(() => setCopiedComplaint(false), 2000);
+  };
+
+  // Clean Preset Loader: resets old results when switching scenarios
+  const loadPresetScenario = (text: string, mode: 'text' | 'link') => {
+    setMessage(text);
+    setInputMode(mode);
+    setAssessment(null);
+    setLinkTraceResult(null);
+    setError(null);
+    setRawOutput(null);
+    setAudioFileUrl(null);
+    setAudioFileName(null);
   };
 
   // UI Translation Dictionary
@@ -980,10 +1022,12 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  setMessage('0300-1234567 se 25,000 ghalti se bhej diye hain, baraye meharbani wapis bhej dein apka bhala hoga.');
-                  setInputMode('text');
-                }}
+                onClick={() =>
+                  loadPresetScenario(
+                    '0300-1234567 se 25,000 ghalti se bhej diye hain, baraye meharbani wapis bhej dein apka bhala hoga.',
+                    'text'
+                  )
+                }
                 className="p-2.5 text-left rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 text-xs space-y-1 group transition-all cursor-pointer"
               >
                 <div className="flex items-center justify-between">
@@ -995,10 +1039,12 @@ export default function Home() {
 
               <button
                 type="button"
-                onClick={() => {
-                  setMessage('Benazir Income Support: 25,000 wazifa manzoor hua. Link par register karein: http://bisp-wazifa-claim.xyz/verify');
-                  setInputMode('link');
-                }}
+                onClick={() =>
+                  loadPresetScenario(
+                    'Benazir Income Support: 25,000 wazifa manzoor hua. Link par register karein: http://bisp-wazifa-claim.xyz/verify',
+                    'link'
+                  )
+                }
                 className="p-2.5 text-left rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 text-xs space-y-1 group transition-all cursor-pointer"
               >
                 <div className="flex items-center justify-between">
@@ -1010,10 +1056,12 @@ export default function Home() {
 
               <button
                 type="button"
-                onClick={() => {
-                  setMessage('HBL Alert: Your OTP for internet banking login is 591823. Valid for 5 mins. NEVER share this OTP with anyone.');
-                  setInputMode('text');
-                }}
+                onClick={() =>
+                  loadPresetScenario(
+                    'HBL Alert: Your OTP for internet banking login is 591823. Valid for 5 mins. NEVER share this OTP with anyone.',
+                    'text'
+                  )
+                }
                 className="p-2.5 text-left rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 text-xs space-y-1 group transition-all cursor-pointer"
               >
                 <div className="flex items-center justify-between">
