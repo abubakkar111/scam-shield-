@@ -1,6 +1,50 @@
 import { GoogleGenAI } from '@google/genai';
 import { NextResponse } from 'next/server';
 
+export interface GemmaAnalysisResult {
+  risk: 'high' | 'medium' | 'low';
+  scam_type: string;
+  reasons: string[];
+  next_steps: string[];
+}
+
+// Helper to strip markdown code blocks and parse JSON safely
+function cleanAndParseJSON(raw: string): GemmaAnalysisResult {
+  let cleaned = raw.trim();
+  // Remove markdown code fences if present (e.g. ```json ... ```)
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  }
+  // Try to locate JSON object substring if model added any surrounding text
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    cleaned = cleaned.substring(start, end + 1);
+  }
+
+  const parsed = JSON.parse(cleaned);
+
+  // Normalize risk to valid values
+  let risk: 'high' | 'medium' | 'low' = 'medium';
+  if (parsed.risk && typeof parsed.risk === 'string') {
+    const r = parsed.risk.toLowerCase().trim();
+    if (r === 'high' || r === 'medium' || r === 'low') {
+      risk = r;
+    }
+  }
+
+  return {
+    risk,
+    scam_type: parsed.scam_type || 'Mashkook Message (Suspicious Activity)',
+    reasons: Array.isArray(parsed.reasons) && parsed.reasons.length > 0
+      ? parsed.reasons
+      : ['Is message mein mashkook dabao ya maloomat mangne ke ishare hain.'],
+    next_steps: Array.isArray(parsed.next_steps) && parsed.next_steps.length > 0
+      ? parsed.next_steps
+      : ['Kisi ko OTP ya PIN na dein.', 'Pehle helpline se tasdeeq karein.'],
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -17,7 +61,7 @@ export async function POST(req: Request) {
     if (!apiKey) {
       return NextResponse.json(
         {
-          error: 'GEMINI_API_KEY missing hai! Apni .env file mein GEMINI_API_KEY=your_key add karein.',
+          error: 'GEMINI_API_KEY missing hai! Apni .env file mein GEMINI_API_KEY add karein.',
         },
         { status: 500 }
       );
@@ -40,16 +84,18 @@ ${message}
     });
 
     const rawText = response.text || '';
+    const parsedResult = cleanAndParseJSON(rawText);
 
     return NextResponse.json({
       success: true,
+      result: parsedResult,
       raw: rawText,
     });
   } catch (err: any) {
     console.error('Gemma 4 API error:', err);
     return NextResponse.json(
       {
-        error: err?.message || 'Gemma 4 API call mein masla aaya. Check your API key and connection.',
+        error: err?.message || 'Gemma 4 API call mein masla aaya. Check your internet connection.',
       },
       { status: 500 }
     );
