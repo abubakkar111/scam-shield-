@@ -16,10 +16,14 @@ const SCAM_PHRASES: { phrase: string; severity: 'high' | 'medium'; category: Rul
   // Accidental Money Transfer & Wallet Fraud
   { phrase: 'ghalti se paise', severity: 'high', category: 'keyword', label: 'Ghalti se paise bhejne ka bahana (Accidental Transfer Scam)' },
   { phrase: 'galti se paise', severity: 'high', category: 'keyword', label: 'Ghalti se paise bhejne ka bahana' },
+  { phrase: 'ghalti se bhej', severity: 'high', category: 'keyword', label: 'Ghalti se raqam bhejne ka dawa' },
+  { phrase: 'galti se bhej', severity: 'high', category: 'keyword', label: 'Ghalti se raqam bhejne ka dawa' },
   { phrase: 'paise wapis', severity: 'high', category: 'keyword', label: 'Paise wapis mangne ka dabao' },
   { phrase: 'paise wapas', severity: 'high', category: 'keyword', label: 'Paise wapas mangne ka dabao' },
   { phrase: 'wapis bhej do', severity: 'high', category: 'keyword', label: 'Paisa fori wapis mangne ki koshish' },
+  { phrase: 'wapis bhej dein', severity: 'high', category: 'keyword', label: 'Paisa fori wapis mangne ki koshish' },
   { phrase: 'wapas bhej dein', severity: 'high', category: 'keyword', label: 'Paisa wapis mangne ki koshish' },
+  { phrase: 'wapas bhej do', severity: 'high', category: 'keyword', label: 'Paisa wapis mangne ki koshish' },
 
   // OTP and Credential Stealing
   { phrase: 'otp share', severity: 'high', category: 'keyword', label: 'OTP mangne ki koshish (High Risk Security Violation)' },
