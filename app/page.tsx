@@ -30,6 +30,8 @@ import {
   Radio,
   PhoneCall,
   PhoneOff,
+  Sparkles,
+  Activity,
 } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
 import { generateFiaComplaint } from '@/lib/complaint';
@@ -761,33 +763,57 @@ export default function Home() {
   }[lang];
 
   return (
-    <main className="min-h-screen bg-[#090D16] text-slate-100 flex flex-col items-center selection:bg-emerald-500 selection:text-slate-950 pb-20 font-sans relative antialiased">
+    <main className="relative flex min-h-screen flex-col items-center overflow-x-hidden pb-20 font-sans text-slate-100 antialiased selection:bg-emerald-400 selection:text-slate-950">
+      {/* Ambient AI atmosphere */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-grid opacity-[0.55]" />
+        <div className="aurora absolute -top-56 left-1/2 h-[42rem] w-[46rem] -translate-x-1/2 rounded-full bg-emerald-500/20 blur-[130px]" />
+        <div className="aurora-slow absolute -left-48 top-24 h-[32rem] w-[32rem] rounded-full bg-cyan-500/15 blur-[120px]" />
+        <div className="aurora-slow absolute -right-48 top-52 h-[32rem] w-[32rem] rounded-full bg-violet-500/15 blur-[120px]" />
+        <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-[#05060B] to-transparent" />
+      </div>
+
       {/* Top Professional Navigation Bar */}
-      <header className="w-full max-w-2xl px-4 sm:px-6 pt-6 pb-4 flex items-center justify-between gap-4 border-b border-white/[0.06]">
+      <header className="sticky top-0 z-40 w-full border-b border-white/[0.07] bg-[#05060B]/70 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4 px-4 pt-3.5 pb-3.5 sm:px-6">
         <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-emerald-400 shadow-sm cursor-pointer"
+          <button
+            type="button"
+            aria-label="Reset Scam Shield"
+            className="group relative h-10 w-10 shrink-0 cursor-pointer"
             onClick={handleClearAll}
           >
-            <Shield className="w-5 h-5 text-emerald-400" />
-          </div>
+            <span className="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-emerald-400/50 via-cyan-400/40 to-violet-500/50 opacity-70 blur-md transition-opacity duration-300 group-hover:opacity-100" />
+            <span className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-[#0A0F18] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+              <Shield className="h-5 w-5 text-emerald-300" />
+            </span>
+          </button>
           <div>
-            <h1 className={`text-base sm:text-lg font-bold text-white tracking-tight ${lang === 'urdu' ? 'font-serif' : ''}`}>
+            <h1 className={`flex items-center gap-2 text-base sm:text-lg font-semibold text-white tracking-tight ${lang === 'urdu' ? 'font-serif' : 'font-display'}`}>
               {t.appName}
+              <span className="rounded-full border border-emerald-300/25 bg-emerald-400/10 px-1.5 py-0.5 text-[9px] font-mono font-semibold uppercase tracking-[0.14em] text-emerald-300">
+                AI
+              </span>
             </h1>
-            <p className="text-[11px] text-slate-400 tracking-tight">
+            <p className="flex items-center gap-1.5 text-[11px] tracking-tight text-slate-400">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              </span>
               {t.appSubtitle}
             </p>
           </div>
         </div>
 
         {/* 3-Way Language Selector */}
-        <div className="flex items-center bg-slate-900/90 p-0.5 rounded-xl border border-slate-800 text-xs">
+        <div className="flex items-center rounded-xl border border-white/10 bg-white/[0.03] p-0.5 text-xs backdrop-blur">
           <button
             type="button"
             onClick={() => setLang('english')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-              lang === 'english' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-white'
+              lang === 'english'
+                ? 'bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             EN
@@ -796,7 +822,9 @@ export default function Home() {
             type="button"
             onClick={() => setLang('roman')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-              lang === 'roman' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-white'
+              lang === 'roman'
+                ? 'bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             Roman
@@ -805,34 +833,54 @@ export default function Home() {
             type="button"
             onClick={() => setLang('urdu')}
             className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
-              lang === 'urdu' ? 'bg-slate-800 text-white font-serif' : 'text-slate-400 hover:text-white'
+              lang === 'urdu'
+                ? 'bg-white/10 text-white font-serif shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             اردو
           </button>
         </div>
+        </div>
       </header>
 
       {/* Hero Headline */}
-      <section className="w-full max-w-2xl px-4 sm:px-6 pt-6 pb-4 text-left space-y-1">
+      <section className="w-full max-w-3xl px-4 pt-12 pb-7 text-center sm:px-6 sm:pt-16 animate-rise">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-300 backdrop-blur">
+          <Sparkles className="h-3 w-3 text-emerald-300" />
+          Gemma 4 · Fraud Intelligence
+        </div>
+
         <h2
-          className={`text-2xl sm:text-3xl font-extrabold tracking-tight text-white ${
-            lang === 'urdu' ? 'font-serif text-2xl sm:text-3xl leading-relaxed text-right' : ''
+          className={`text-gradient mx-auto mt-5 max-w-2xl text-balance text-3xl font-semibold leading-[1.12] tracking-tight sm:text-[2.6rem] ${
+            lang === 'urdu' ? 'font-serif leading-[1.5]' : 'font-display'
           }`}
         >
           {t.headline}
         </h2>
         <p
-          className={`text-xs sm:text-sm text-slate-400 leading-relaxed ${
-            lang === 'urdu' ? 'font-serif text-base text-right' : ''
+          className={`mx-auto mt-4 max-w-xl text-[13px] leading-relaxed text-slate-400 sm:text-sm ${
+            lang === 'urdu' ? 'font-serif text-base' : ''
           }`}
         >
           {t.tagline}
         </p>
+
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2 font-mono text-[10px] uppercase tracking-wider text-slate-500 sm:text-[11px]">
+          {['3-layer analysis', 'Urdu + English', 'Screenshot OCR', 'Private by design'].map((feature) => (
+            <span
+              key={feature}
+              className="flex items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.02] px-2.5 py-1"
+            >
+              <span className="h-1 w-1 rounded-full bg-emerald-400/80" />
+              {feature}
+            </span>
+          ))}
+        </div>
       </section>
 
       {/* Main Verification Container */}
-      <div className="w-full max-w-2xl px-4 sm:px-6 space-y-3">
+      <div className="w-full max-w-3xl px-4 sm:px-6 space-y-4">
         {/* Hidden File Inputs */}
         <input
           ref={audioInputRef}
@@ -858,7 +906,33 @@ export default function Home() {
         )}
 
         {/* VERIFICATION CARD */}
-        <div className="rounded-2xl bg-[#0D121D] border border-slate-800 shadow-xl p-4 sm:p-5 space-y-3">
+        <div className="card-shell">
+          <div className="card-core p-4 sm:p-5 space-y-4">
+            {/* Console toolbar */}
+            <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex items-center gap-1" aria-hidden>
+                  <span className="h-2 w-2 rounded-full bg-rose-400/60" />
+                  <span className="h-2 w-2 rounded-full bg-amber-400/60" />
+                  <span className="h-2 w-2 rounded-full bg-emerald-400/60" />
+                </span>
+                <span className="ml-1 flex items-center gap-1.5 font-mono text-[11px] text-slate-400">
+                  <Activity className="h-3.5 w-3.5 text-emerald-300" />
+                  ScamShield Console
+                </span>
+              </div>
+              <span
+                className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10px] transition-colors ${
+                  loading
+                    ? 'border-amber-300/25 bg-amber-400/10 text-amber-300'
+                    : 'border-emerald-300/20 bg-emerald-400/[0.07] text-emerald-300'
+                }`}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${loading ? 'bg-amber-300 animate-pulse' : 'bg-emerald-400'}`} />
+                {loading ? 'Analyzing…' : 'Engine ready'}
+              </span>
+            </div>
+
           <form onSubmit={handleFormSubmit} className="space-y-3">
             {/* Input Textarea */}
             <div className="relative">
@@ -869,7 +943,7 @@ export default function Home() {
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder={t.placeholder}
                 dir={lang === 'urdu' ? 'rtl' : 'ltr'}
-                className={`w-full p-3.5 rounded-xl bg-[#080B13] border border-slate-800 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-slate-600 transition-all resize-none leading-relaxed ${
+                className={`w-full min-h-[112px] resize-none rounded-2xl border border-white/10 bg-[#04060B]/80 p-4 text-sm leading-relaxed text-slate-100 placeholder-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-all focus:border-emerald-400/40 focus:outline-none focus:ring-4 focus:ring-emerald-400/10 ${
                   lang === 'urdu' ? 'font-serif text-base leading-loose' : 'font-sans'
                 }`}
                 required
@@ -952,7 +1026,7 @@ export default function Home() {
             </div>
 
             {/* Verification Dock */}
-            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
               {/* Media Inputs */}
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* 1-Click Paste Clipboard Button */}
@@ -960,7 +1034,7 @@ export default function Home() {
                   type="button"
                   onClick={handlePasteClipboard}
                   title="Paste from Clipboard"
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-all hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
                 >
                   <Copy className="w-3.5 h-3.5 text-slate-400" />
                   <span className="hidden sm:inline">{t.pasteBtn}</span>
@@ -973,8 +1047,8 @@ export default function Home() {
                   title="Record Speech"
                   className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                     isRecording
-                      ? 'bg-rose-500 text-white animate-pulse'
-                      : 'bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white'
+                      ? 'bg-rose-500 text-white animate-pulse shadow-[0_0_20px_-4px_rgba(244,63,94,0.7)]'
+                      : 'border border-white/10 bg-white/[0.04] text-slate-300 hover:border-white/20 hover:bg-white/[0.08] hover:text-white'
                   }`}
                 >
                   {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5 text-slate-400" />}
@@ -986,7 +1060,7 @@ export default function Home() {
                   type="button"
                   onClick={() => imageInputRef.current?.click()}
                   title="Upload Screenshot"
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-all hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
                 >
                   <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
                   <span className="hidden sm:inline">Photo</span>
@@ -997,7 +1071,7 @@ export default function Home() {
                   type="button"
                   onClick={() => audioInputRef.current?.click()}
                   title="Attach Audio File"
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-all hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
                 >
                   <Music className="w-3.5 h-3.5 text-slate-400" />
                   <span className="hidden sm:inline">Audio</span>
@@ -1019,7 +1093,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading || !message.trim()}
-                  className="inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 text-slate-950 disabled:text-slate-500 font-bold text-xs sm:text-sm active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed shadow-sm"
+                  className="btn-shine inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-400 via-emerald-300 to-cyan-300 px-5 py-2.5 text-xs font-bold text-[#04120C] shadow-[0_12px_40px_-12px_rgba(52,211,153,0.75)] transition-all hover:brightness-105 hover:shadow-[0_18px_50px_-12px_rgba(52,211,153,0.9)] active:scale-95 disabled:cursor-not-allowed disabled:bg-none disabled:bg-white/[0.05] disabled:text-slate-500 disabled:shadow-none sm:text-sm"
                 >
                   {loading ? (
                     <>
@@ -1036,18 +1110,19 @@ export default function Home() {
               </div>
             </div>
           </form>
+          </div>
         </div>
 
         {/* CLEAN PROTECTION STATUS BAR */}
-        <div className="rounded-xl bg-[#0D121D] border border-slate-800/80 px-3.5 py-2.5 flex items-center justify-between text-xs">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-2.5 text-xs backdrop-blur">
           <div className="flex items-center gap-2.5 truncate">
             <span
-              className={`w-2 h-2 rounded-full shrink-0 ${
-                sentryListening ? 'bg-rose-500 animate-ping' : sentryActive ? 'bg-emerald-400' : 'bg-slate-600'
+              className={`h-2 w-2 shrink-0 rounded-full ${
+                sentryListening ? 'bg-rose-500 animate-ping' : sentryActive ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]' : 'bg-slate-600'
               }`}
             />
             <div className="truncate">
-              <span className="font-semibold text-slate-200 mr-2">{t.guardTitle}:</span>
+              <span className="mr-2 font-mono text-[10px] uppercase tracking-wider text-slate-300">{t.guardTitle}:</span>
               <span className="text-slate-400 text-[11px] truncate">
                 {sentryListening ? 'Active Call Listening...' : sentryActive ? t.guardActive : t.guardPaused}
               </span>
@@ -1100,7 +1175,7 @@ export default function Home() {
         {assessment && (
           <section
             id="security-dossier"
-            className={`rounded-2xl p-5 sm:p-6 transition-all space-y-5 border ${
+            className={`animate-rise space-y-5 rounded-[26px] border p-5 shadow-[0_40px_120px_-60px_rgba(0,0,0,1)] backdrop-blur-xl transition-all sm:p-6 ${
               assessment.finalRisk === 'high'
                 ? 'bg-[#120B10] border-rose-500/40'
                 : assessment.finalRisk === 'medium'
@@ -1326,8 +1401,11 @@ export default function Home() {
 
         {/* 3 AUTHENTIC PAKISTANI SCAM SCENARIOS (Quick Test Chips) */}
         {!assessment && (
-          <div className="pt-2 space-y-2">
-            <p className="text-xs text-slate-400 font-medium">{t.examplesTitle}</p>
+          <div className="space-y-2.5 pt-3">
+            <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+              <span className="h-px w-5 bg-gradient-to-r from-transparent to-emerald-400/60" />
+              {t.examplesTitle}
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {/* WhatsApp Fake Reversal */}
               <button
@@ -1337,7 +1415,7 @@ export default function Home() {
                     '0300-1234567 se 25,000 ghalti se bhej diye hain, baraye meharbani wapis bhej dein apka bhala hoga.'
                   )
                 }
-                className="p-3 text-left rounded-xl bg-[#0D121D] hover:bg-slate-800/80 border border-slate-800 text-xs space-y-1 transition-all cursor-pointer group"
+                className="group cursor-pointer space-y-1.5 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-3.5 text-left text-xs transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06] hover:shadow-[0_18px_40px_-24px_rgba(0,0,0,0.9)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-200">Easypaisa Reversal</span>
@@ -1356,7 +1434,7 @@ export default function Home() {
                     'Benazir Income Support: 25,000 wazifa manzoor hua. Link par register karein: http://bisp-wazifa-claim.xyz/verify'
                   )
                 }
-                className="p-3 text-left rounded-xl bg-[#0D121D] hover:bg-slate-800/80 border border-slate-800 text-xs space-y-1 transition-all cursor-pointer group"
+                className="group cursor-pointer space-y-1.5 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-3.5 text-left text-xs transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06] hover:shadow-[0_18px_40px_-24px_rgba(0,0,0,0.9)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-200">8171 BISP Link</span>
@@ -1375,7 +1453,7 @@ export default function Home() {
                     'HBL Alert: Your OTP for internet banking login is 591823. Valid for 5 mins. NEVER share this OTP with anyone.'
                   )
                 }
-                className="p-3 text-left rounded-xl bg-[#0D121D] hover:bg-slate-800/80 border border-slate-800 text-xs space-y-1 transition-all cursor-pointer group"
+                className="group cursor-pointer space-y-1.5 rounded-2xl border border-white/[0.08] bg-white/[0.025] p-3.5 text-left text-xs transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06] hover:shadow-[0_18px_40px_-24px_rgba(0,0,0,0.9)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-200">Genuine Bank OTP</span>
@@ -1393,7 +1471,7 @@ export default function Home() {
       {/* ALERT POPUP MODAL (Zero-Click Interception) */}
       {interceptionAlert && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
-          <div className="relative w-full max-w-md rounded-2xl bg-[#0D121D] border border-rose-500/50 shadow-2xl p-5 space-y-4 text-slate-100">
+          <div className="animate-rise relative w-full max-w-md space-y-4 rounded-[26px] border border-rose-500/40 bg-[#0B0F19]/95 p-5 text-slate-100 shadow-[0_0_120px_-30px_rgba(244,63,94,0.55)] backdrop-blur-2xl">
             {/* Modal Header */}
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5">
@@ -1471,11 +1549,13 @@ export default function Home() {
       )}
 
       {/* Understated Clean Footer */}
-      <footer className="mt-14 text-center text-xs text-slate-500 max-w-xl px-4 space-y-1 font-mono">
-        <p className={lang === 'urdu' ? 'font-serif text-sm' : ''}>{t.disclaimer}</p>
-        <p className="text-[11px] text-slate-600">
-          Scam Shield Pakistan • Powered by Google Gemma 4 (26B-A4B-IT) • MIT License
-        </p>
+      <footer className="mt-16 w-full max-w-3xl space-y-3 border-t border-white/[0.06] px-4 pt-6 text-center text-xs text-slate-500 sm:px-6">
+        <p className={`mx-auto max-w-md leading-relaxed ${lang === 'urdu' ? 'font-serif text-sm' : ''}`}>{t.disclaimer}</p>
+        <div className="flex flex-wrap items-center justify-center gap-2 font-mono text-[10px] uppercase tracking-wider text-slate-600">
+          <span className="rounded-full border border-white/[0.06] bg-white/[0.02] px-2.5 py-1">Gemma 4 · 26B-A4B-IT</span>
+          <span className="rounded-full border border-white/[0.06] bg-white/[0.02] px-2.5 py-1">On-device OCR</span>
+          <span className="rounded-full border border-white/[0.06] bg-white/[0.02] px-2.5 py-1">MIT License</span>
+        </div>
       </footer>
     </main>
   );
