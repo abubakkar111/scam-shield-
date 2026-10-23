@@ -78,14 +78,17 @@ If **either** engine detects a critical threat, the final verdict escalates to H
 ---
 
 ## 🚀 Key Features
+- **Authoritative Cyber Protection Portal**: High-trust, professional interface focused strictly on rapid citizen protection without confusing AI jargon.
 - **Tri-Lingual Support**: Instant 1-click toggle between **English**, **Roman Urdu**, and **Urdu Script (اردو رسم الخط)** with full RTL styling.
-- **Pre-Click Link Destination Tracer**: Safely resolves shortened URLs (`bit.ly`, `tinyurl`) and traces redirects server-side before the user clicks, unmasking lookalike phishing domains (`.xyz`, `.click`, typosquats).
-- **Voice Call & WhatsApp Audio Note Analysis**: Live microphone speech recording **plus** audio file selection from device gallery/storage (`.mp3`, `.wav`, `.m4a`), with built-in simulated Pakistani scam calls.
-- **Screenshot / Photo OCR**: Upload or drag-and-drop screenshots of SMS or WhatsApp chats. In-browser OCR extracts text automatically before AI analysis.
+- **Pre-Click Link Destination Tracer**: Safely resolves shortened URLs (`bit.ly`, `tinyurl`) and traces redirects server-side up to 5 hops, unmasking lookalike phishing domains (`.xyz`, `.click`, typosquats) before the citizen clicks.
+- **Live Call Guard & Background Sentry**: Continuous microphone monitoring of speakerphone calls in real-time, detecting OTP extraction, fake bank manager calls, and biometric verification fraud.
+- **Web Audio Siren Alarm & Push Alerts**: Synthesizes an emergency police siren via the Web Audio API and fires native desktop push notifications when high-voltage fraud is intercepted.
+- **Voice Call & WhatsApp Audio Note Analysis**: Live microphone speech recording **plus** audio file upload from device storage (`.mp3`, `.wav`, `.m4a`).
+- **Screenshot / Photo OCR**: Upload screenshots of SMS or WhatsApp chats; in-browser OCR (`tesseract.js`) extracts text on-device with zero server data leakage.
 - **1-Click FIA Cybercrime (NR3C) / Bank Complaint Generator**: Automatically formats a ready-to-file legal complaint draft in Urdu or English with victim instructions.
 - **1-Click Pakistani Test Scenarios**: Demo-ready scenarios (Accidental transfer, BISP phishing, Genuine bank OTP).
 - **Graceful Fail-Safe**: If internet connectivity is interrupted, the app automatically falls back to the deterministic local rules engine.
-- **Judges Deep-Dive Accordion**: Collapsible raw JSON inspection proving real-time inference with `gemma-4-26b-a4b-it`.
+- **Judges Deep-Dive Accordion**: Collapsible technical forensics proving real-time inference with Google's open-weight `gemma-4-26b-a4b-it`.
 
 ---
 
@@ -93,10 +96,12 @@ If **either** engine detects a critical threat, the final verdict escalates to H
 - **Framework**: Next.js 16 (App Router)
 - **AI Model**: Google Gemma 4 (`gemma-4-26b-a4b-it`) via `@google/genai`
 - **Model License**: [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0)
-- **Computer Vision / OCR**: `tesseract.js`
+- **Computer Vision / OCR**: `tesseract.js` (WebAssembly)
+- **Audio Synthesizer**: Native Web Audio API (`AudioContext`)
+- **Speech Recognition**: Native Web Speech API (`SpeechRecognition`)
 - **Styling**: Tailwind CSS v4 + PostCSS
 - **Icons**: Lucide React
-- **Language**: TypeScript
+- **Language**: TypeScript 7.0
 
 ---
 
@@ -104,8 +109,8 @@ If **either** engine detects a critical threat, the final verdict escalates to H
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-username/scam-shield.git
-cd scam-shield
+git clone https://github.com/abubakkar111/scam-shield-.git
+cd scam-shield-
 ```
 
 ### 2. Install Dependencies
