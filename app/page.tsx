@@ -3,30 +3,34 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   ShieldAlert,
+  ShieldCheck,
+  AlertTriangle,
   Send,
   Sparkles,
-  AlertCircle,
   RefreshCw,
-  AlertTriangle,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  ShieldCheck,
-  Lock,
-  Upload,
-  Image as ImageIcon,
-  FileText,
-  Cpu,
-  Mic,
-  MicOff,
-  Link as LinkIcon,
-  Volume2,
   Copy,
   Check,
+  Mic,
+  MicOff,
+  Image as ImageIcon,
   Music,
+  Link as LinkIcon,
+  Volume2,
+  Lock,
   ArrowRight,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
   X,
   Zap,
+  Cpu,
+  Shield,
+  Smartphone,
+  Info,
+  CheckCircle2,
+  Share2,
+  FileText,
+  AlertCircle,
 } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
 import { generateFiaComplaint } from '@/lib/complaint';
@@ -60,7 +64,7 @@ export default function Home() {
   // 3-Way Language Selector: English, Roman Urdu, Urdu (اردو)
   const [lang, setLang] = useState<'english' | 'roman' | 'urdu'>('roman');
 
-  // Unified Message State
+  // Input & Processing States
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +78,7 @@ export default function Home() {
   const [assessment, setAssessment] = useState<CombinedAssessment | null>(null);
   const [linkTraceResult, setLinkTraceResult] = useState<LinkTraceData | null>(null);
   const [rawOutput, setRawOutput] = useState<string | null>(null);
-  const [showRaw, setShowRaw] = useState(false);
+  const [showDeepForensics, setShowDeepForensics] = useState(false);
   const [copiedComplaint, setCopiedComplaint] = useState(false);
 
   // Screenshot OCR States
@@ -141,7 +145,7 @@ export default function Home() {
 
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data.error || 'Server error occurred');
+          throw new Error(data.error || 'Security scanner error occurred');
         }
 
         setAssessment(data.assessment);
@@ -150,7 +154,7 @@ export default function Home() {
         }
         setRawOutput(data.raw);
 
-        // Auto Voice Alert for High Risk
+        // Auto Voice Warning for High Risk
         if (data.assessment.finalRisk === 'high' && typeof window !== 'undefined' && window.speechSynthesis) {
           const alertSpeech =
             lang === 'urdu'
@@ -161,7 +165,7 @@ export default function Home() {
           window.speechSynthesis.speak(utterance);
         }
       } catch (err: any) {
-        setError(err.message || 'Masla pesh aaya. Dobara check karein.');
+        setError(err.message || 'Inspection failed. Please retry.');
       } finally {
         setLoading(false);
       }
@@ -194,7 +198,7 @@ export default function Home() {
           }
 
           setMessage(trimmed);
-          setAutoNotice('⚡ Intercepted new message from WhatsApp clipboard! Auto-scanning with Gemma 4...');
+          setAutoNotice('⚡ Clipboard message intercepted & scanned with Gemma 4!');
           setTimeout(() => setAutoNotice(null), 3500);
 
           executeAnalysis(trimmed);
@@ -254,7 +258,7 @@ export default function Home() {
       setError(
         lang === 'urdu'
           ? 'براؤزر اسپیچ ریکگنیشن سپورٹ نہیں کرتا۔ برائے مہربانی آڈیو فائل اپلوڈ کریں۔'
-          : 'Microphone recognition is not supported in this browser. Please upload an audio file or type text.'
+          : 'Microphone speech recognition is not supported in this browser. Please upload an audio file or type text.'
       );
       return;
     }
@@ -321,7 +325,7 @@ export default function Home() {
 
       const extractedText = ret.data.text.trim();
       if (!extractedText) {
-        throw new Error('Image se text extract nahi ho saka. Baraye meharbani saaf tasweer dein.');
+        throw new Error('Could not extract readable text from screenshot. Please try a clearer image.');
       }
 
       setMessage(extractedText);
@@ -329,7 +333,7 @@ export default function Home() {
       executeAnalysis(extractedText);
     } catch (ocrErr: any) {
       console.error('OCR Error:', ocrErr);
-      setError(ocrErr.message || 'Screenshot se text parhne mein masla aaya.');
+      setError(ocrErr.message || 'Screenshot OCR scanning failed.');
     } finally {
       setOcrLoading(false);
     }
@@ -346,6 +350,21 @@ export default function Home() {
     setAudioFileUrl(null);
     setAudioFileName(audioName || null);
     executeAnalysis(text);
+  };
+
+  // Paste from clipboard helper button
+  const handlePasteClipboard = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          setMessage(text.trim());
+          executeAnalysis(text.trim());
+        }
+      }
+    } catch (e) {
+      // Ignore if user denies clipboard prompt
+    }
   };
 
   // Clear All
@@ -420,102 +439,118 @@ export default function Home() {
   // UI Translation Dictionary
   const t = {
     english: {
-      heroTitle: 'Scam Shield',
-      heroSubtitle: 'Instant Cyber Fraud & Link Scanner for Pakistan • Powered by Google Gemma 4',
-      placeholder: 'Paste SMS, WhatsApp message, or link. Or click mic/attachments below...',
-      checkBtn: 'Scan with Gemma 4',
-      checkingBtn: 'Analyzing...',
-      highRisk: 'High Risk (Bohat Khatarnak)',
-      medRisk: 'Caution (Ehtiyat Karein)',
-      lowRisk: 'No Obvious Threats Found',
-      highDesc: 'Critical fraud indicators, financial extortion, or OTP theft detected.',
-      medDesc: 'Suspicious traits detected. Do not send funds or click without verification.',
-      lowDesc: 'No obvious red flags found. Never assume unsolicited messages are 100% safe.',
-      listenBtn: 'Listen Aloud',
-      copyComplaint: 'Copy FIA Report',
-      reasonsTitle: 'Forensic Evidence & Red Flags:',
-      stepsTitle: 'Recommended Protective Action:',
-      presetsLabel: 'Test Scenarios:',
-      disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / Guidance only, not a legal guarantee.',
+      appName: 'Scam Shield',
+      appSubtitle: 'AI Cyber Threat Intelligence',
+      headline: 'Stop Scams Before They Strike.',
+      tagline: 'Instant forensic detection for WhatsApp scams, fake Easypaisa transfers, phishing links, and voice notes.',
+      placeholder: 'Paste suspicious message, SMS, or link here... Or use mic, audio, and screenshot below.',
+      pasteBtn: 'Paste',
+      scanBtn: 'Scan Threat',
+      scanningBtn: 'Analyzing...',
+      highRisk: 'CRITICAL SCAM DETECTED',
+      medRisk: 'SUSPICIOUS ACTIVITY (CAUTION)',
+      lowRisk: 'NO OBVIOUS THREATS FOUND',
+      highDesc: 'High-confidence indicators of financial fraud, credential theft, or social engineering extortion.',
+      medDesc: 'Suspicious characteristics identified. Do not send funds or click links without manual verification.',
+      lowDesc: 'No obvious malicious patterns found. Always exercise standard digital caution.',
+      listenBtn: 'Listen Warning',
+      copyComplaint: 'Copy FIA Police Report',
+      indicatorsTitle: 'Forensic Intelligence & Indicators',
+      actionsTitle: 'Immediate Defensive Action Plan',
+      examplesTitle: 'Or test these real-world Pakistani scam scenarios:',
+      disclaimer: 'Guidance only, not a legal guarantee. Always cross-verify with official bank helplines.',
+      deepForensics: 'Technical Intelligence & Gemma 4 Breakdown',
     },
     roman: {
-      heroTitle: 'Scam Shield',
-      heroSubtitle: 'Easypaisa, JazzCash, fake calls, aur links ki Gemma 4 AI se fori jaanch.',
-      placeholder: 'SMS, WhatsApp message, ya link paste karein. Ya neeche mic/photo se upload karein...',
-      checkBtn: 'Jaanchein (Scan)',
-      checkingBtn: 'Jaanch Raha Hai...',
-      highRisk: 'Bohat Khatarnak (High Risk)',
-      medRisk: 'Ehtiyat Karein (Medium Risk)',
-      lowRisk: 'Koi Wazeh Khatra Nahi Mila',
-      highDesc: 'Is message ya call mein fraud ya raqam churanay ke qawi asarat hain.',
-      medDesc: 'Kuch mashkook nishaniyan mili hain. Tasdeeq ke baghair amal na karein.',
-      lowDesc: 'Fori scam signs nahi mile, lekin hamesha hoshiyar rahein.',
-      listenBtn: 'Suniye (Listen)',
+      appName: 'Scam Shield',
+      appSubtitle: 'Pakistan Ka AI Cyber Defense',
+      headline: 'Har Fraud Se Pehle Alert Ho Jayein.',
+      tagline: 'Easypaisa, JazzCash, fake calls, screenshots aur mashkook links ki Gemma 4 AI se fori jaanch.',
+      placeholder: 'SMS, WhatsApp message, ya link yahan paste karein... Ya neeche mic ya screenshot use karein.',
+      pasteBtn: 'Paste Karein',
+      scanBtn: 'Threat Scan Karein',
+      scanningBtn: 'Jaanch Raha Hai...',
+      highRisk: 'BOHAT KHATARNAK (HIGH RISK)',
+      medRisk: 'EHTIYAT KAREIN (MEDIUM RISK)',
+      lowRisk: 'KOI WAZEH KHATRA NAHI MILA',
+      highDesc: 'Is message ya call mein fraud aur raqam churanay ke qawi shawahid hain.',
+      medDesc: 'Kuch mashkook pehlu mile hain. Tasdeeq ke baghair koi raqam ya code na dein.',
+      lowDesc: 'Fori khatra nahi mila, lekin anjaan messages par hamesha ehtiyat bartein.',
+      listenBtn: 'Awaz Suniye',
       copyComplaint: 'FIA Report Copy Karein',
-      reasonsTitle: 'Khatray Ki Wajuhat (Evidence):',
-      stepsTitle: 'Agle Hifazati Iqdamat (Next Steps):',
-      presetsLabel: 'Test Scenarios:',
-      disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / Guidance only, not a legal guarantee.',
+      indicatorsTitle: 'Khatray Ki Forensic Wajuhat',
+      actionsTitle: 'Agle Hifazati Iqdamat (Next Steps)',
+      examplesTitle: 'Ya in aam Pakistani frauds ko test karein:',
+      disclaimer: 'Yeh madad hai, final faisla nahi. Pehle helpline se tasdeeq karein.',
+      deepForensics: 'Technical Forensics & Gemma 4 Details',
     },
     urdu: {
-      heroTitle: 'اسکیم شیلڈ',
-      heroSubtitle: 'ایزی پیسہ، جاز کیش، جعلی کالز اور لنکس کی گُوگل جیما 4 کے ذریعے فوری جانچ۔',
-      placeholder: 'پیغام یا لنک یہاں درج کریں، یا مائیک/تصویر کا استعمال کریں...',
-      checkBtn: 'فوری جانچ کریں',
-      checkingBtn: 'جائزہ جاری ہے...',
+      appName: 'اسکیم شیلڈ',
+      appSubtitle: 'پاکستان کا مصنوعی ذہانت پر مبنی سائبر ڈیفنس سسٹم',
+      headline: 'ہر فراڈ اور دھوکے سے باخبر رہیں۔',
+      tagline: 'ایزی پیسہ، جاز کیش، جعلی کالز اور مشکوک لنکس کی گُوگل جیما 4 کے ذریعے فوری فرانزک جانچ۔',
+      placeholder: 'مشکوک ایس ایم ایس، پیغام یا لنک یہاں درج کریں یا مائیک/تصویر کا استعمال کریں...',
+      pasteBtn: 'پیسٹ کریں',
+      scanBtn: 'فوری جانچ کریں',
+      scanningBtn: 'جائزہ جاری ہے...',
       highRisk: 'انتہائی خطرناک (ہائی رسک)',
       medRisk: 'احتیاط برتیں (درمیانہ خطرہ)',
       lowRisk: 'کوئی واضح خطرہ نہیں ملا',
-      highDesc: 'اس پیغام یا کال میں مالی فراڈ یا رقم چرانے کے واضح شواہد موجود ہیں۔',
-      medDesc: 'کچھ مشکوک علامات پائی گئی ہیں۔ تصدیق کے بغیر کوئی عمل نہ کریں۔',
+      highDesc: 'اس پیغام یا کال میں مالی فراڈ اور رقم ہتھیانے کے واضح شواہد موجود ہیں۔',
+      medDesc: 'کچھ مشکوک علامات پائی گئی ہیں۔ تصدیق کے بغیر کوئی قدم نہ اٹھائیں۔',
       lowDesc: 'کوئی فوری خطرہ ظاہر نہیں ہوا، مگر ہمیشہ محتاط رہیں۔',
-      listenBtn: 'سنیں (صوتی الرٹ)',
-      copyComplaint: 'ایف آئی اے رپورٹ کاپی کریں',
-      reasonsTitle: 'خطرے کی وجوہات (شواہد):',
-      stepsTitle: 'حفاظتی اقدامات (کیا کریں):',
-      presetsLabel: 'آزمائشی نمونے:',
-      disclaimer: '⚠️ یہ رہنمائی کے لیے ہے، حتمی قانونی فیصلہ نہیں۔',
+      listenBtn: 'صوتی الرٹ سنیں',
+      copyComplaint: 'ایف آئی اے رپورٹ بنائیں',
+      indicatorsTitle: 'فرانزک شواہد اور خطرے کی وجوہات',
+      actionsTitle: 'فوری حفاظتی اقدامات',
+      examplesTitle: 'یا ان پاکستانی فراڈ پیغامات کا تجربہ کریں:',
+      disclaimer: 'یہ رہنمائی کے لیے ہے، حتمی قانونی فیصلہ نہیں۔',
+      deepForensics: 'تکنیکی شواہد اور جیما 4 تفصیلات',
     },
   }[lang];
 
   return (
-    <main className="min-h-screen bg-[#0B0F17] text-slate-100 flex flex-col items-center selection:bg-emerald-500 selection:text-slate-950 pb-16 font-sans relative overflow-x-hidden">
-      {/* Background Radial Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-64 bg-gradient-to-b from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none" />
+    <main className="min-h-screen bg-[#07090E] text-slate-100 flex flex-col items-center selection:bg-emerald-500 selection:text-slate-950 pb-24 font-sans relative overflow-x-hidden antialiased">
+      {/* Ambient Lighting Accents */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-80 bg-[radial-gradient(ellipse_60%_50%_at_50%_-10%,rgba(16,185,129,0.15),transparent)] pointer-events-none" />
+      <div className="absolute top-40 right-10 w-72 h-72 bg-emerald-500/[0.03] rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-60 left-10 w-72 h-72 bg-cyan-500/[0.03] rounded-full blur-3xl pointer-events-none" />
 
-      {/* Top App Bar */}
-      <header className="w-full max-w-xl px-4 pt-8 pb-4 flex items-center justify-between gap-3 relative z-10">
+      {/* Floating Top Header */}
+      <header className="w-full max-w-3xl px-4 sm:px-6 pt-6 pb-4 flex items-center justify-between gap-4 relative z-20">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 p-[1px] shadow-lg shadow-emerald-500/20 shrink-0">
-            <div className="w-full h-full bg-[#0B0F17] rounded-xl flex items-center justify-center text-emerald-400">
-              <ShieldAlert className="w-5 h-5" />
+          <div className="relative group cursor-pointer" onClick={handleClearAll}>
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-500 p-[1px] shadow-[0_0_20px_rgba(16,185,129,0.25)] transition-all group-hover:shadow-[0_0_28px_rgba(16,185,129,0.45)]">
+              <div className="w-full h-full bg-[#0B0F17] rounded-2xl flex items-center justify-center text-emerald-400">
+                <ShieldAlert className="w-5 h-5 transition-transform group-hover:scale-110" />
+              </div>
             </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className={`text-xl font-black text-white tracking-tight ${lang === 'urdu' ? 'font-serif' : ''}`}>
-                {t.heroTitle}
+              <h1 className={`text-lg sm:text-xl font-black text-white tracking-tight ${lang === 'urdu' ? 'font-serif' : ''}`}>
+                {t.appName}
               </h1>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Gemma 4
+                Gemma 4 IT
               </span>
             </div>
-            <p className={`text-[11px] text-slate-400 line-clamp-1 ${lang === 'urdu' ? 'font-serif' : ''}`}>
-              {t.heroSubtitle}
+            <p className="text-[11px] text-slate-400 font-mono tracking-tight hidden sm:block">
+              {t.appSubtitle}
             </p>
           </div>
         </div>
 
         {/* 3-Way Language Segmented Pill */}
-        <div className="flex items-center bg-slate-900/90 p-0.5 rounded-xl border border-white/[0.08] shadow-inner shrink-0">
+        <div className="flex items-center bg-[#0F1420]/90 p-1 rounded-2xl border border-white/[0.08] shadow-inner backdrop-blur-xl">
           <button
             type="button"
             onClick={() => setLang('english')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               lang === 'english'
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black shadow-md shadow-emerald-500/20'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             EN
@@ -523,10 +558,10 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setLang('roman')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               lang === 'roman'
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black shadow-md shadow-emerald-500/20'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             Roman
@@ -534,10 +569,10 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setLang('urdu')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               lang === 'urdu'
-                ? 'bg-emerald-500 text-slate-950 shadow-sm font-serif'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/20 font-serif'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             اردو
@@ -545,8 +580,26 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Single-Card App Container */}
-      <div className="w-full max-w-xl px-4 space-y-3.5 relative z-10">
+      {/* Hero Showcase Headline */}
+      <section className="w-full max-w-2xl px-4 sm:px-6 pt-6 pb-6 text-center space-y-2.5 relative z-10">
+        <h2
+          className={`text-3xl sm:text-4xl font-black tracking-tight text-white ${
+            lang === 'urdu' ? 'font-serif text-3xl sm:text-4xl leading-relaxed' : ''
+          }`}
+        >
+          {t.headline}
+        </h2>
+        <p
+          className={`text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed ${
+            lang === 'urdu' ? 'font-serif text-base' : ''
+          }`}
+        >
+          {t.tagline}
+        </p>
+      </section>
+
+      {/* Main Container */}
+      <div className="w-full max-w-2xl px-4 sm:px-6 space-y-5 relative z-10">
         {/* Hidden File Inputs */}
         <input
           ref={audioInputRef}
@@ -563,254 +616,258 @@ export default function Home() {
           className="hidden"
         />
 
-        {/* Temporary Auto-Scan Toast */}
+        {/* Temporary Auto-Scan Toast Alert */}
         {autoNotice && (
-          <div className="p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/10 animate-in fade-in duration-200">
-            <Zap className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-bounce" />
-            <span className="font-semibold text-[11px] truncate">{autoNotice}</span>
+          <div className="p-3 rounded-2xl bg-emerald-950/90 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5 shadow-xl shadow-emerald-950/40 animate-in fade-in zoom-in-95 duration-200 backdrop-blur-xl">
+            <Zap className="w-4 h-4 text-emerald-400 shrink-0 animate-bounce" />
+            <span className="font-semibold text-xs leading-tight">{autoNotice}</span>
           </div>
         )}
 
-        {/* The Designer Glassmorphic Card */}
-        <div className="bg-slate-900/60 border border-white/[0.08] rounded-2xl p-4 sm:p-5 shadow-2xl backdrop-blur-xl space-y-3">
-          <form onSubmit={handleFormSubmit} className="space-y-3">
-            {/* The Unified Input Box */}
-            <div className="relative bg-[#080B11] border border-white/[0.07] focus-within:border-emerald-500/60 focus-within:ring-2 focus-within:ring-emerald-500/20 rounded-xl transition-all">
-              <textarea
-                id="main-unified-input"
-                rows={3}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder={t.placeholder}
-                dir={lang === 'urdu' ? 'rtl' : 'ltr'}
-                className={`w-full p-3.5 bg-transparent text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all resize-y leading-relaxed ${
-                  lang === 'urdu' ? 'font-serif' : 'font-sans'
-                }`}
-                required
-              />
+        {/* THE OMNI-SHIELD UNIFIED PROMPT CANVAS */}
+        <div className="relative rounded-3xl p-[1px] bg-gradient-to-b from-white/[0.16] via-white/[0.05] to-transparent shadow-[0_10px_40px_-15px_rgba(0,0,0,0.7)] transition-all">
+          <div className="bg-[#0B0F17]/95 backdrop-blur-2xl rounded-3xl p-4 sm:p-5 space-y-3">
+            <form onSubmit={handleFormSubmit} className="space-y-3">
+              {/* Textarea Area */}
+              <div className="relative">
+                <textarea
+                  id="main-unified-input"
+                  rows={3}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder={t.placeholder}
+                  dir={lang === 'urdu' ? 'rtl' : 'ltr'}
+                  className={`w-full p-3.5 sm:p-4 rounded-2xl bg-[#07090E]/90 border border-white/[0.08] text-slate-100 placeholder-slate-500 text-sm sm:text-base focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none leading-relaxed ${
+                    lang === 'urdu' ? 'font-serif text-lg leading-loose' : 'font-sans'
+                  }`}
+                  required
+                />
 
-              {/* Link Detection Chip */}
-              {detectedUrl && (
-                <div className="mx-3 mb-2 p-2 rounded-lg bg-emerald-950/60 border border-emerald-500/30 flex items-center justify-between gap-2 text-xs font-mono">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <LinkIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span className="text-emerald-300 font-bold text-[11px]">Link:</span>
-                    <span className="text-slate-300 truncate underline text-[11px]">{detectedUrl}</span>
-                  </div>
-                  <span className="text-[10px] text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded font-semibold shrink-0">
-                    Unmasking Target
-                  </span>
-                </div>
-              )}
-
-              {/* Audio Preview Chip */}
-              {audioFileUrl && (
-                <div className="mx-3 mb-2 p-2 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2 text-xs">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <Music className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span className="text-slate-300 font-mono text-[11px] truncate">{audioFileName}</span>
-                  </div>
-                  <audio controls src={audioFileUrl} className="h-6 max-w-[180px]" />
-                </div>
-              )}
-
-              {/* Screenshot Progress Chip */}
-              {ocrLoading && (
-                <div className="mx-3 mb-2 p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between text-[11px] text-slate-300">
-                    <span className="flex items-center gap-1.5 font-mono">
-                      <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
-                      Scanning screenshot with OCR...
+                {/* Real-time Link Detection Chip */}
+                {detectedUrl && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between gap-2 text-xs font-mono backdrop-blur-md">
+                    <div className="flex items-center gap-2 truncate">
+                      <LinkIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span className="text-emerald-400 font-bold text-xs">Link Detected:</span>
+                      <span className="text-slate-200 truncate underline text-xs">{detectedUrl}</span>
+                    </div>
+                    <span className="text-[10px] text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-md font-bold shrink-0">
+                      Unmasking
                     </span>
-                    <span className="font-mono text-emerald-400 font-bold">{ocrProgress}%</span>
                   </div>
-                  <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-                    <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${ocrProgress}%` }} />
-                  </div>
-                </div>
-              )}
+                )}
 
-              {imagePreview && !ocrLoading && (
-                <div className="mx-3 mb-2 flex items-center gap-2.5 p-2 rounded-lg bg-slate-900 border border-slate-800">
-                  <img src={imagePreview} alt="Screenshot" className="w-9 h-9 object-cover rounded border border-slate-700" />
-                  <p className="text-[11px] text-slate-300">Screenshot attached & text extracted into scanner.</p>
-                </div>
-              )}
+                {/* Audio Attachment Preview */}
+                {audioFileUrl && (
+                  <div className="mt-2 p-2.5 rounded-xl bg-[#0F1420] border border-white/[0.08] flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2 truncate">
+                      <Music className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
+                      <span className="text-slate-300 font-mono text-xs truncate">{audioFileName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <audio controls src={audioFileUrl} className="h-7 max-w-[160px] sm:max-w-[200px]" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAudioFileUrl(null);
+                          setAudioFileName(null);
+                        }}
+                        className="text-slate-400 hover:text-white p-1"
+                        title="Remove Audio"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Screenshot OCR Scanning Bar */}
+                {ocrLoading && (
+                  <div className="mt-2 p-3 rounded-xl bg-[#0F1420] border border-white/[0.08] space-y-2 text-xs">
+                    <div className="flex items-center justify-between text-xs text-slate-300">
+                      <span className="flex items-center gap-2 font-mono">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                        Scanning screenshot OCR...
+                      </span>
+                      <span className="font-mono text-emerald-400 font-bold">{ocrProgress}%</span>
+                    </div>
+                    <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${ocrProgress}%` }} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Screenshot Loaded Preview */}
+                {imagePreview && !ocrLoading && (
+                  <div className="mt-2 flex items-center justify-between p-2.5 rounded-xl bg-[#0F1420] border border-white/[0.08]">
+                    <div className="flex items-center gap-3">
+                      <img src={imagePreview} alt="Screenshot" className="w-10 h-10 object-cover rounded-lg border border-slate-700" />
+                      <div className="text-xs space-y-0.5">
+                        <p className="font-semibold text-slate-200">Screenshot Attached</p>
+                        <p className="text-[11px] text-slate-400">OCR text extracted into scanner.</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setImagePreview(null)}
+                      className="text-slate-400 hover:text-white p-1"
+                      title="Remove Screenshot"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Bottom Integrated Action Bar */}
-              <div className="flex items-center justify-between px-3 py-2 border-t border-white/[0.05] bg-slate-950/40 rounded-b-xl">
-                {/* Media Buttons */}
-                <div className="flex items-center gap-1.5">
-                  {/* Mic Button */}
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/[0.06]">
+                {/* Media Capture Tool Buttons */}
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  {/* Mic Recording Button */}
                   <button
                     type="button"
                     onClick={toggleRecording}
-                    title="Record Voice"
-                    className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                    title="Record Live Speech"
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                       isRecording
-                        ? 'bg-rose-500 text-white animate-pulse'
-                        : 'text-slate-400 hover:text-emerald-400 hover:bg-slate-900'
+                        ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/30'
+                        : 'bg-[#0F1420] hover:bg-slate-800/80 border border-white/[0.08] text-slate-300 hover:text-white'
                     }`}
                   >
-                    {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                    {isRecording && <span className="text-[10px] font-mono">{recordingSeconds}s</span>}
+                    {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-emerald-400" />}
+                    <span>{isRecording ? `${recordingSeconds}s` : 'Voice'}</span>
                   </button>
 
-                  {/* Audio Upload */}
+                  {/* Screenshot Button */}
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    title="Attach Screenshot"
+                    className="px-2.5 py-2 sm:px-3 sm:py-2 rounded-xl bg-[#0F1420] hover:bg-slate-800/80 border border-white/[0.08] text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <ImageIcon className="w-4 h-4 text-emerald-400" />
+                    <span className="hidden sm:inline">Photo</span>
+                  </button>
+
+                  {/* Audio File Button */}
                   <button
                     type="button"
                     onClick={() => audioInputRef.current?.click()}
                     title="Attach Audio File"
-                    className="p-2 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-900 transition-all cursor-pointer"
+                    className="px-2.5 py-2 sm:px-3 sm:py-2 rounded-xl bg-[#0F1420] hover:bg-slate-800/80 border border-white/[0.08] text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
                   >
-                    <Music className="w-4 h-4" />
+                    <Music className="w-4 h-4 text-emerald-400" />
+                    <span className="hidden sm:inline">Audio</span>
                   </button>
 
-                  {/* Screenshot Upload */}
+                  {/* 1-Click Paste Clipboard Button */}
                   <button
                     type="button"
-                    onClick={() => imageInputRef.current?.click()}
-                    title="Upload Screenshot"
-                    className="p-2 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-900 transition-all cursor-pointer"
+                    onClick={handlePasteClipboard}
+                    title="Paste from Clipboard"
+                    className="px-2.5 py-2 sm:px-3 sm:py-2 rounded-xl bg-[#0F1420] hover:bg-slate-800/80 border border-white/[0.08] text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
                   >
-                    <ImageIcon className="w-4 h-4" />
+                    <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="hidden sm:inline">{t.pasteBtn}</span>
                   </button>
                 </div>
 
-                {/* Right: Clear + Primary Scan Button */}
+                {/* Right: Clear + Primary Action Button */}
                 <div className="flex items-center gap-2">
                   {message && (
                     <button
                       type="button"
                       onClick={handleClearAll}
-                      className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer text-xs"
+                      className="px-2.5 py-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer text-xs font-semibold"
                       title="Clear"
                     >
-                      <X className="w-4 h-4" />
+                      Clear
                     </button>
                   )}
 
                   <button
                     type="submit"
                     disabled={loading || !message.trim()}
-                    className="inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 disabled:from-slate-800 disabled:to-slate-800 text-slate-950 disabled:text-slate-500 font-bold text-xs shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all cursor-pointer disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 disabled:from-slate-800 disabled:to-slate-800 text-slate-950 disabled:text-slate-500 font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all cursor-pointer disabled:cursor-not-allowed"
                   >
                     {loading ? (
                       <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>{t.checkingBtn}</span>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>{t.scanningBtn}</span>
                       </>
                     ) : (
                       <>
-                        <span>{t.checkBtn}</span>
-                        <Send className="w-3.5 h-3.5" />
+                        <span>{t.scanBtn}</span>
+                        <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
                 </div>
               </div>
-            </div>
-          </form>
-
-          {/* 3 Clickable Scenario Chips */}
-          <div className="pt-2 flex items-center justify-between gap-1.5 flex-wrap">
-            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">
-              {t.presetsLabel}
-            </span>
-
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                onClick={() =>
-                  loadPreset(
-                    '0300-1234567 se 25,000 ghalti se bhej diye hain, baraye meharbani wapis bhej dein apka bhala hoga.'
-                  )
-                }
-                className="px-2.5 py-1 rounded-lg bg-slate-950/70 hover:bg-slate-800 border border-white/[0.06] hover:border-rose-500/30 text-[11px] text-slate-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                <span>Easypaisa Scam</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  loadPreset(
-                    'Benazir Income Support: 25,000 wazifa manzoor hua. Link par register karein: http://bisp-wazifa-claim.xyz/verify'
-                  )
-                }
-                className="px-2.5 py-1 rounded-lg bg-slate-950/70 hover:bg-slate-800 border border-white/[0.06] hover:border-amber-500/30 text-[11px] text-slate-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                <span>Fake BISP Link</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  loadPreset(
-                    'HBL Alert: Your OTP for internet banking login is 591823. Valid for 5 mins. NEVER share this OTP with anyone.'
-                  )
-                }
-                className="px-2.5 py-1 rounded-lg bg-slate-950/70 hover:bg-slate-800 border border-white/[0.06] hover:border-emerald-500/30 text-[11px] text-slate-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>Bank OTP</span>
-              </button>
-            </div>
+            </form>
           </div>
         </div>
 
-        {/* Error Alert */}
+        {/* Error Alert Box */}
         {error && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 flex items-start gap-2.5 text-xs">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-start gap-3 text-xs shadow-lg backdrop-blur-md">
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold">Notice</p>
-              <p>{error}</p>
+              <p className="font-bold text-sm">Security Notice</p>
+              <p className="mt-0.5 leading-relaxed">{error}</p>
             </div>
           </div>
         )}
 
-        {/* Result Card */}
+        {/* THE EXECUTIVE SECURITY DOSSIER (Result View) */}
         {assessment && (
           <section
-            className={`border rounded-2xl p-4 sm:p-5 transition-all space-y-4 shadow-2xl backdrop-blur-xl ${
+            className={`rounded-3xl p-5 sm:p-7 transition-all space-y-6 shadow-2xl backdrop-blur-2xl border ${
               assessment.finalRisk === 'high'
-                ? 'bg-gradient-to-b from-rose-950/25 to-[#0B0F17] border-rose-500/40 shadow-rose-950/20'
+                ? 'bg-gradient-to-b from-rose-950/25 via-[#0B0F17] to-[#07090E] border-rose-500/40 shadow-[0_0_60px_-15px_rgba(244,63,94,0.3)]'
                 : assessment.finalRisk === 'medium'
-                ? 'bg-gradient-to-b from-amber-950/25 to-[#0B0F17] border-amber-500/40 shadow-amber-950/20'
-                : 'bg-gradient-to-b from-emerald-950/25 to-[#0B0F17] border-emerald-500/40 shadow-emerald-950/20'
+                ? 'bg-gradient-to-b from-amber-950/25 via-[#0B0F17] to-[#07090E] border-amber-500/40 shadow-[0_0_60px_-15px_rgba(245,158,11,0.3)]'
+                : 'bg-gradient-to-b from-emerald-950/25 via-[#0B0F17] to-[#07090E] border-emerald-500/40 shadow-[0_0_60px_-15px_rgba(16,185,129,0.3)]'
             }`}
           >
             {/* Header: Traffic Light Status */}
-            <div className="flex items-start justify-between gap-3 pb-3 border-b border-white/[0.06]">
-              <div className="flex items-center gap-3">
-                {assessment.finalRisk === 'high' ? (
-                  <ShieldAlert className="w-8 h-8 text-rose-400 shrink-0" />
-                ) : assessment.finalRisk === 'medium' ? (
-                  <AlertTriangle className="w-8 h-8 text-amber-400 shrink-0" />
-                ) : (
-                  <CheckCircle2 className="w-8 h-8 text-emerald-400 shrink-0" />
-                )}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
+              <div className="flex items-center gap-3.5">
+                <div
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
+                    assessment.finalRisk === 'high'
+                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-rose-500/25'
+                      : assessment.finalRisk === 'medium'
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-amber-500/25'
+                      : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-emerald-500/25'
+                  }`}
+                >
+                  {assessment.finalRisk === 'high' ? (
+                    <ShieldAlert className="w-7 h-7" />
+                  ) : assessment.finalRisk === 'medium' ? (
+                    <AlertTriangle className="w-7 h-7" />
+                  ) : (
+                    <CheckCircle2 className="w-7 h-7" />
+                  )}
+                </div>
 
                 <div>
-                  <h2
-                    className={`text-lg font-black tracking-tight ${
+                  <h3
+                    className={`text-xl sm:text-2xl font-black tracking-tight ${
                       assessment.finalRisk === 'high'
                         ? 'text-rose-400'
                         : assessment.finalRisk === 'medium'
                         ? 'text-amber-400'
                         : 'text-emerald-400'
-                    } ${lang === 'urdu' ? 'font-serif' : ''}`}
+                    } ${lang === 'urdu' ? 'font-serif text-2xl' : ''}`}
                   >
                     {assessment.finalRisk === 'high'
                       ? t.highRisk
                       : assessment.finalRisk === 'medium'
                       ? t.medRisk
                       : t.lowRisk}
-                  </h2>
-                  <p className={`text-xs text-slate-300 mt-0.5 ${lang === 'urdu' ? 'font-serif' : ''}`}>
+                  </h3>
+                  <p className={`text-xs sm:text-sm text-slate-300 mt-0.5 leading-relaxed ${lang === 'urdu' ? 'font-serif' : ''}`}>
                     {assessment.finalRisk === 'high'
                       ? t.highDesc
                       : assessment.finalRisk === 'medium'
@@ -820,158 +877,277 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Action Buttons: Listen & Copy */}
-              <div className="flex items-center gap-1.5 shrink-0">
+              {/* Action Buttons: Listen Aloud & Copy Complaint */}
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={handleSpeakVerdict}
                   title="Listen Aloud"
-                  className="p-2 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-white/[0.08] text-emerald-400 text-xs transition-all cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/[0.1] text-emerald-400 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
                 >
                   <Volume2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t.listenBtn}</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleCopyComplaint}
-                  title="Copy FIA Complaint"
-                  className="px-3 py-1.5 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-white/[0.08] text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Copy Legal Report"
+                  className="px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/[0.1] text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
                 >
-                  {copiedComplaint ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedComplaint ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                   <span>{copiedComplaint ? 'Copied' : t.copyComplaint}</span>
                 </button>
               </div>
             </div>
 
-            {/* Unmasked Destination Link */}
+            {/* Unmasked Destination Link Card */}
             {linkTraceResult && (
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-white/[0.06] space-y-1.5 text-xs font-mono">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-slate-300 flex items-center gap-1 uppercase">
-                    <LinkIcon className="w-3 h-3 text-emerald-400" />
-                    Target Domain:
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/[0.08] space-y-2 text-xs font-mono">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-300 flex items-center gap-1.5 uppercase text-xs">
+                    <LinkIcon className="w-3.5 h-3.5 text-emerald-400" />
+                    Target Destination Unmasked:
                   </span>
                   {linkTraceResult.redirected && (
-                    <span className="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[10px]">
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold">
                       Redirects Externally
                     </span>
                   )}
                 </div>
-                <div className="text-emerald-300 font-bold truncate text-[11px] underline">
-                  {linkTraceResult.finalUrl}
+
+                <div className="p-3 rounded-xl bg-[#07090E] border border-white/[0.06] space-y-1.5">
+                  <div className="flex items-center gap-2 text-slate-400 text-xs truncate">
+                    <span>Input Link:</span>
+                    <span className="text-slate-300 truncate">{linkTraceResult.original}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-emerald-300 font-bold text-xs truncate">
+                    <ArrowRight className="w-4 h-4 shrink-0 text-emerald-400" />
+                    <span>Real Destination:</span>
+                    <span className="truncate underline">{linkTraceResult.finalUrl}</span>
+                  </div>
                 </div>
-                <p className="text-[11px] text-slate-400">{linkTraceResult.verdict}</p>
+
+                <p className="text-[11px] text-slate-400">
+                  <strong className="text-slate-200">Security Assessment:</strong> {linkTraceResult.verdict}
+                </p>
               </div>
             )}
 
             {/* Threat Meter Bar */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="text-slate-300 font-semibold">{assessment.scamType}</span>
-                <span className="text-slate-400">Score: {assessment.threatScore}%</span>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-slate-200 font-bold">Classification: {assessment.scamType}</span>
+                <span className="text-slate-400 font-bold">Threat Index: {assessment.threatScore}%</span>
               </div>
-              <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-white/[0.05]">
+              <div className="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-white/[0.06]">
                 <div
-                  className={`h-full transition-all duration-500 ${
+                  className={`h-full transition-all duration-500 rounded-full ${
                     assessment.finalRisk === 'high'
-                      ? 'bg-rose-500'
+                      ? 'bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.8)]'
                       : assessment.finalRisk === 'medium'
-                      ? 'bg-amber-500'
-                      : 'bg-emerald-500'
+                      ? 'bg-gradient-to-r from-amber-600 to-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.8)]'
+                      : 'bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.8)]'
                   }`}
                   style={{ width: `${assessment.threatScore}%` }}
                 />
               </div>
             </div>
 
-            {/* Reasons List */}
-            <div className="space-y-1.5">
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                <span>{t.reasonsTitle}</span>
-              </h3>
-              <ul className="space-y-1.5">
+            {/* Forensic Reasons Cards */}
+            <div className="space-y-2.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 text-amber-400" />
+                <span>{t.indicatorsTitle}</span>
+              </h4>
+              <ul className="space-y-2">
                 {assessment.reasons.map((r, i) => (
                   <li
                     key={i}
                     dir={lang === 'urdu' ? 'rtl' : 'ltr'}
-                    className={`flex items-start gap-2 text-xs text-slate-200 bg-slate-950/50 p-2.5 rounded-xl border border-white/[0.05] ${
-                      lang === 'urdu' ? 'font-serif text-sm' : ''
+                    className={`flex items-start gap-3 text-xs sm:text-sm text-slate-200 bg-[#07090E]/80 p-3.5 rounded-2xl border border-white/[0.06] ${
+                      lang === 'urdu' ? 'font-serif text-base' : ''
                     }`}
                   >
-                    <span className="text-amber-400 font-bold shrink-0">•</span>
-                    <span>{r}</span>
+                    <span className="text-amber-400 font-black text-sm shrink-0 leading-none mt-1">•</span>
+                    <span className="leading-relaxed">{r}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Next Steps List */}
-            <div className="space-y-1.5">
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{t.stepsTitle}</span>
-              </h3>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {/* Protective Next Steps */}
+            <div className="space-y-2.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>{t.actionsTitle}</span>
+              </h4>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {assessment.nextSteps.map((s, i) => (
                   <li
                     key={i}
                     dir={lang === 'urdu' ? 'rtl' : 'ltr'}
-                    className={`flex items-start gap-2 text-xs text-slate-200 bg-slate-950/50 p-2.5 rounded-xl border border-white/[0.05] ${
-                      lang === 'urdu' ? 'font-serif' : ''
+                    className={`flex items-start gap-2.5 text-xs sm:text-sm text-slate-200 bg-[#07090E]/80 p-3.5 rounded-2xl border border-white/[0.06] ${
+                      lang === 'urdu' ? 'font-serif text-base' : ''
                     }`}
                   >
-                    <Lock className="w-3 h-3 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>{s}</span>
+                    <Lock className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <span className="leading-relaxed">{s}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Dual-Layer Explainability Card */}
-            <div className="pt-2 border-t border-white/[0.06] text-[11px] space-y-1.5 font-mono">
-              <span className="text-slate-400 block uppercase">Dual-Layer Security Breakdown:</span>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-2 rounded-lg bg-slate-950/60 border border-white/[0.05]">
-                  <span className="text-emerald-300 font-bold block">Gemma 4 AI</span>
-                  <span className="text-slate-400 uppercase text-[10px]">{assessment.layerBreakdown.gemmaVerdict}</span>
+            {/* Collapsible Deep Forensics & Gemma 4 Telemetry */}
+            <div className="pt-2 border-t border-white/[0.08]">
+              <button
+                type="button"
+                onClick={() => setShowDeepForensics(!showDeepForensics)}
+                className="w-full flex items-center justify-between text-xs text-slate-400 hover:text-slate-200 py-2 transition-colors font-mono cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="font-bold">{t.deepForensics}</span>
+                </span>
+                {showDeepForensics ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+
+              {showDeepForensics && (
+                <div className="mt-3 space-y-3 animate-in fade-in duration-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 font-mono text-xs">
+                    <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-white/[0.06] space-y-1">
+                      <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Google Gemma 4 AI
+                      </span>
+                      <p className="text-[11px] text-slate-300">
+                        Verdict: <strong className="uppercase">{assessment.layerBreakdown.gemmaVerdict}</strong>
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {assessment.layerBreakdown.gemmaHighlights[0] || 'Linguistic context analyzed.'}
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-white/[0.06] space-y-1">
+                      <span className="font-bold text-cyan-300 flex items-center gap-1.5">
+                        <Shield className="w-3.5 h-3.5" />
+                        Pakistani Heuristics Engine
+                      </span>
+                      <p className="text-[11px] text-slate-300">
+                        Violations: <strong>{assessment.layerBreakdown.rulesHighlights.length} rules triggered</strong>
+                      </p>
+                      <p className="text-[11px] text-slate-400 truncate">
+                        {assessment.layerBreakdown.rulesHighlights[0] || 'Zero blacklisted keywords found.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {rawOutput && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-mono text-slate-500 uppercase">Gemma 4 JSON Output Payload:</p>
+                      <pre className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-emerald-300 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                        {rawOutput}
+                      </pre>
+                    </div>
+                  )}
                 </div>
-                <div className="p-2 rounded-lg bg-slate-950/60 border border-white/[0.05]">
-                  <span className="text-sky-300 font-bold block">Rules Engine</span>
-                  <span className="text-slate-400 text-[10px]">{assessment.layerBreakdown.rulesHighlights.length} flags triggered</span>
-                </div>
-              </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* 3 REALISTIC SIMULATED SCENARIO CARDS (Consumer App Style) */}
+        {!assessment && (
+          <div className="pt-2 space-y-3">
+            <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
+              <span className="flex items-center gap-1.5">
+                <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{t.examplesTitle}</span>
+              </span>
+              <span className="text-[10px] text-slate-500">1-Tap Test</span>
             </div>
 
-            {/* Collapsible Raw JSON for Judges */}
-            {rawOutput && (
-              <div className="pt-1 border-t border-white/[0.06]">
-                <button
-                  type="button"
-                  onClick={() => setShowRaw(!showRaw)}
-                  className="w-full flex items-center justify-between text-[11px] text-slate-500 hover:text-slate-300 py-1 transition-colors font-mono cursor-pointer"
-                >
-                  <span className="flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-emerald-400" />
-                    Inspect Gemma 4 Raw Payload (Judges Proof)
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* WhatsApp Fake Reversal Card */}
+              <button
+                type="button"
+                onClick={() =>
+                  loadPreset(
+                    '0300-1234567 se 25,000 ghalti se bhej diye hain, baraye meharbani wapis bhej dein apka bhala hoga.'
+                  )
+                }
+                className="p-3.5 text-left rounded-2xl bg-[#0B0F17]/80 hover:bg-[#101622] border border-white/[0.06] hover:border-rose-500/40 text-xs space-y-2 transition-all cursor-pointer group shadow-sm active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                    Easypaisa Scam
                   </span>
-                  {showRaw ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </button>
-                {showRaw && (
-                  <pre className="mt-2 p-3 rounded-xl bg-slate-950 border border-slate-800 text-emerald-300 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                    {rawOutput}
-                  </pre>
-                )}
-              </div>
-            )}
-          </section>
+                  <span className="w-2 h-2 rounded-full bg-rose-500" />
+                </div>
+                <p className="text-slate-300 font-medium text-xs line-clamp-2">
+                  "25,000 ghalti se bhej diye hain, maa hospital mein hai foran wapis karein..."
+                </p>
+                <span className="text-[10px] text-slate-500 group-hover:text-emerald-400 transition-colors block font-mono">
+                  Tap to scan trap →
+                </span>
+              </button>
+
+              {/* BISP Phishing Link Card */}
+              <button
+                type="button"
+                onClick={() =>
+                  loadPreset(
+                    'Benazir Income Support: 25,000 wazifa manzoor hua. Link par register karein: http://bisp-wazifa-claim.xyz/verify'
+                  )
+                }
+                className="p-3.5 text-left rounded-2xl bg-[#0B0F17]/80 hover:bg-[#101622] border border-white/[0.06] hover:border-amber-500/40 text-xs space-y-2 transition-all cursor-pointer group shadow-sm active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                    BISP Phishing
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                </div>
+                <p className="text-slate-300 font-medium text-xs line-clamp-2">
+                  "8171: 25,000 wazifa manzoor hua. Link par register karein: bisp-wazifa-claim.xyz"
+                </p>
+                <span className="text-[10px] text-slate-500 group-hover:text-emerald-400 transition-colors block font-mono">
+                  Tap to unmask link →
+                </span>
+              </button>
+
+              {/* Genuine Bank OTP Card */}
+              <button
+                type="button"
+                onClick={() =>
+                  loadPreset(
+                    'HBL Alert: Your OTP for internet banking login is 591823. Valid for 5 mins. NEVER share this OTP with anyone.'
+                  )
+                }
+                className="p-3.5 text-left rounded-2xl bg-[#0B0F17]/80 hover:bg-[#101622] border border-white/[0.06] hover:border-emerald-500/40 text-xs space-y-2 transition-all cursor-pointer group shadow-sm active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                    Legit Bank OTP
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                </div>
+                <p className="text-slate-300 font-medium text-xs line-clamp-2">
+                  "HBL Alert: Your OTP is 591823. Valid for 5 mins. NEVER share with anyone."
+                </p>
+                <span className="text-[10px] text-slate-500 group-hover:text-emerald-400 transition-colors block font-mono">
+                  Tap to verify safety →
+                </span>
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Clean Minimalist Footer */}
-      <footer className="mt-10 text-center text-[11px] text-slate-500 max-w-xl px-4 space-y-1 font-mono relative z-10">
-        <p className={lang === 'urdu' ? 'font-serif' : ''}>{t.disclaimer}</p>
-        <p className="text-[10px] text-slate-600">
-          Scam Shield Pakistan • Google Gemma 4 (26B-A4B-IT) • Apache 2.0 • MIT Open Source
+      {/* Modern Minimal Footer */}
+      <footer className="mt-14 text-center text-xs text-slate-500 max-w-xl px-4 space-y-1.5 font-mono relative z-10">
+        <p className={lang === 'urdu' ? 'font-serif text-sm' : ''}>{t.disclaimer}</p>
+        <p className="text-[11px] text-slate-600">
+          Scam Shield Pakistan • Powered by Google Gemma 4 (26B-A4B-IT) • Apache 2.0 • MIT License
         </p>
       </footer>
     </main>

@@ -2,8 +2,18 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Scam Shield Pakistan | Gemma 4 AI Scam Detector',
-  description: 'Detect SMS, WhatsApp, Easypaisa, JazzCash, and banking scams in Roman Urdu using Gemma 4 open-weight AI.',
+  title: 'Scam Shield Pakistan • AI Cyber Defense & Scam Intelligence',
+  description:
+    'Instant forensic analysis for SMS, WhatsApp fraud, fake Easypaisa/JazzCash transfers, phishing links, and voice notes powered by Google Gemma 4.',
+  keywords: [
+    'Scam Shield',
+    'Pakistan Scam Detector',
+    'Easypaisa Fraud',
+    'JazzCash Scam',
+    'FIA Cybercrime',
+    'Google Gemma 4',
+    'Roman Urdu AI',
+  ],
 };
 
 export default function RootLayout({
@@ -13,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="antialiased bg-slate-950 text-slate-100 min-h-screen">
+      <body className="antialiased bg-[#07090E] text-slate-100 min-h-screen selection:bg-emerald-500 selection:text-slate-950">
         {children}
       </body>
     </html>
