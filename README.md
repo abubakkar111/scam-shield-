@@ -78,8 +78,11 @@ If **either** engine detects a critical threat, the final verdict escalates to H
 ---
 
 ## 🚀 Key Features
-- **Dual Language Support**: Instant 1-click toggle between **Roman Urdu** and **Urdu Script (اردو رسم الخط)** with full RTL styling.
-- **Screenshot / Photo OCR**: Upload or drag-and-drop screenshots of SMS or WhatsApp chats. In-browser OCR extracts the text automatically.
+- **Tri-Lingual Support**: Instant 1-click toggle between **English**, **Roman Urdu**, and **Urdu Script (اردو رسم الخط)** with full RTL styling.
+- **Pre-Click Link Destination Tracer**: Safely resolves shortened URLs (`bit.ly`, `tinyurl`) and traces redirects server-side before the user clicks, unmasking lookalike phishing domains (`.xyz`, `.click`, typosquats).
+- **Voice Call & WhatsApp Audio Note Analysis**: Live microphone speech recording **plus** audio file selection from device gallery/storage (`.mp3`, `.wav`, `.m4a`), with built-in simulated Pakistani scam calls.
+- **Screenshot / Photo OCR**: Upload or drag-and-drop screenshots of SMS or WhatsApp chats. In-browser OCR extracts text automatically before AI analysis.
+- **1-Click FIA Cybercrime (NR3C) / Bank Complaint Generator**: Automatically formats a ready-to-file legal complaint draft in Urdu or English with victim instructions.
 - **1-Click Pakistani Test Scenarios**: Demo-ready scenarios (Accidental transfer, BISP phishing, Genuine bank OTP).
 - **Graceful Fail-Safe**: If internet connectivity is interrupted, the app automatically falls back to the deterministic local rules engine.
 - **Judges Deep-Dive Accordion**: Collapsible raw JSON inspection proving real-time inference with `gemma-4-26b-a4b-it`.
