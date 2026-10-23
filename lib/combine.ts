@@ -42,16 +42,35 @@ export function combineSecurityLayers(
     }
   }
 
-  // 2. Aggregate reasons (Gemma reasons + Rules violations)
-  const combinedReasons: string[] = [...gemma.reasons];
+  // 2. Prepare Clean, Human-Friendly Reasons
+  // Use Gemma 4's contextual reasons as the primary natural language explanation
+  let combinedReasons: string[] = Array.isArray(gemma.reasons) && gemma.reasons.length > 0
+    ? [...gemma.reasons]
+    : [];
 
-  for (const violation of rules.violations) {
-    const formattedViolation = lang === 'urdu'
-      ? `سیکیورٹی رولز فلیگ: ${violation.message} (${violation.matched})`
-      : `Security Rule Flag: ${violation.message} ("${violation.matched}")`;
-    if (!combinedReasons.includes(formattedViolation)) {
-      combinedReasons.push(formattedViolation);
+  // If rules caught a high-severity violation (e.g., lookalike domain or shortener) that wasn't already explained,
+  // add at most ONE concise rule summary note instead of dumping multiple duplicate flags
+  if (rules.violations.length > 0) {
+    const topViolation = rules.violations.find(v => v.severity === 'high') || rules.violations[0];
+    if (topViolation) {
+      const summaryRule = lang === 'urdu'
+        ? `سیکیورٹی سسٹم الرٹ: ${topViolation.message}`
+        : `Security Heuristics Alert: ${topViolation.message}`;
+      
+      // Only append if reasons list is short (< 4) and not already duplicated
+      if (combinedReasons.length < 4 && !combinedReasons.some(r => r.includes(topViolation.message))) {
+        combinedReasons.push(summaryRule);
+      }
     }
+  }
+
+  // Fallback if empty
+  if (combinedReasons.length === 0) {
+    combinedReasons = [
+      lang === 'urdu'
+        ? 'اس پیغام کا تکنیکی اور لغوی جائزہ مکمل کیا گیا ہے۔'
+        : 'Message context and safety indicators evaluated.',
+    ];
   }
 
   // 3. Prepare Layer Highlights for Explainability
