@@ -72,6 +72,75 @@ const LEGIT_DOMAINS = [
   'bisp.gov.pk',
 ];
 
+export interface UrlInspectionResult {
+  url: string;
+  domain: string;
+  isHttps: boolean;
+  isShortener: boolean;
+  isSuspiciousTld: boolean;
+  spoofedBrand: string | null;
+  hasHyphens: boolean;
+  riskLevel: 'high' | 'medium' | 'low';
+  verdict: string;
+}
+
+export function inspectUrlSafety(rawUrl: string): UrlInspectionResult | null {
+  const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}(\/[^\s]*)?)/i;
+  const match = rawUrl.match(urlRegex);
+  if (!match) return null;
+
+  const found = match[0];
+  const isHttps = found.toLowerCase().startsWith('https://');
+  const clean = found.toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, '');
+  const domain = clean.split('/')[0].split('?')[0];
+
+  const isShortener = URL_SHORTENERS.some(s => domain === s || domain.endsWith('.' + s));
+  const isSuspiciousTld = SUSPICIOUS_TLDS.some(t => domain.endsWith(t));
+
+  let spoofedBrand: string | null = null;
+  const brands = ['easypaisa', 'jazzcash', 'hbl', 'ubl', 'bisp', 'nadra', 'fesco', 'nayapay', 'sadapay'];
+  for (const b of brands) {
+    if (domain.includes(b)) {
+      const isLegit = LEGIT_DOMAINS.some(legit => domain === legit || domain.endsWith('.' + legit));
+      if (!isLegit) {
+        spoofedBrand = b;
+        break;
+      }
+    }
+  }
+
+  const hasHyphens = (domain.match(/-/g) || []).length >= 2;
+
+  let riskLevel: 'high' | 'medium' | 'low' = 'low';
+  let verdict = 'Domain format appears standard, but verify origin before entering credentials.';
+
+  if (spoofedBrand || isSuspiciousTld) {
+    riskLevel = 'high';
+    verdict = spoofedBrand
+      ? `DO NOT CLICK: Impersonating ${spoofedBrand.toUpperCase()} via untrusted domain (${domain})`
+      : `DANGEROUS TLD: Scam domain pattern detected (${domain})`;
+  } else if (isShortener || hasHyphens || !isHttps) {
+    riskLevel = 'medium';
+    verdict = isShortener
+      ? 'CAUTION: Shortened link masks the real destination website.'
+      : !isHttps
+      ? 'CAUTION: Insecure connection (HTTP without SSL).'
+      : 'CAUTION: Unusually high hyphen count in domain.';
+  }
+
+  return {
+    url: found,
+    domain,
+    isHttps,
+    isShortener,
+    isSuspiciousTld,
+    spoofedBrand,
+    hasHyphens,
+    riskLevel,
+    verdict,
+  };
+}
+
 export function runSecurityRules(text: string): RulesAnalysisResult {
   const violations: RuleViolation[] = [];
   const lower = text.toLowerCase();
