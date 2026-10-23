@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { NextResponse } from 'next/server';
-import { runSecurityRules } from '@/lib/rules';
+import { runSecurityRules, inspectUrlSafety } from '@/lib/rules';
 import { combineSecurityLayers } from '@/lib/combine';
 
 export interface GemmaAnalysisResult {
@@ -8,6 +8,66 @@ export interface GemmaAnalysisResult {
   scam_type: string;
   reasons: string[];
   next_steps: string[];
+}
+
+export interface UnmaskedUrlData {
+  original: string;
+  finalUrl: string;
+  redirected: boolean;
+  domain: string;
+  isHttps: boolean;
+  riskLevel: 'high' | 'medium' | 'low';
+  verdict: string;
+}
+
+// Unmask redirects and track where links actually lead
+async function traceLinkDestination(rawText: string): Promise<UnmaskedUrlData | null> {
+  const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}(\/[^\s]*)?)/i;
+  const match = rawText.match(urlRegex);
+  if (!match) return null;
+
+  const found = match[0];
+  let targetUrl = found;
+  if (!/^https?:\/\//i.test(targetUrl)) {
+    targetUrl = 'http://' + targetUrl;
+  }
+
+  let finalUrl = targetUrl;
+  let redirected = false;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3500);
+
+    const res = await fetch(targetUrl, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
+    });
+    clearTimeout(timeout);
+
+    if (res.url && res.url !== targetUrl) {
+      finalUrl = res.url;
+      redirected = true;
+    }
+  } catch (e) {
+    // If request times out or is offline, analyze the domain directly
+  }
+
+  const inspection = inspectUrlSafety(finalUrl) || inspectUrlSafety(targetUrl);
+
+  return {
+    original: found,
+    finalUrl,
+    redirected,
+    domain: inspection?.domain || finalUrl.split('/')[2] || finalUrl,
+    isHttps: finalUrl.toLowerCase().startsWith('https://'),
+    riskLevel: inspection?.riskLevel || 'medium',
+    verdict: inspection?.verdict || 'Domain reputation assessed.',
+  };
 }
 
 function cleanAndParseJSON(raw: string, lang: 'english' | 'roman' | 'urdu'): GemmaAnalysisResult {
@@ -34,34 +94,25 @@ function cleanAndParseJSON(raw: string, lang: 'english' | 'roman' | 'urdu'): Gem
     const defaultType = lang === 'urdu'
       ? 'مشکوک سرگرمی'
       : lang === 'english'
-      ? 'Suspicious Social Engineering'
+      ? 'Suspicious Activity'
       : 'Mashkook Message / Activity';
-
-    const defaultReasons = lang === 'urdu'
-      ? ['اس پیغام یا کال میں مالی فراڈ کے مشکوک اشارے پائے گئے ہیں']
-      : lang === 'english'
-      ? ['Urgency or suspicious credential requests detected.']
-      : ['Is message ya call mein mashkook dabao ke ishare hain.'];
-
-    const defaultSteps = lang === 'urdu'
-      ? ['کوئی ذاتی معلومات، او ٹی پی یا رقم مت بھیجیں']
-      : lang === 'english'
-      ? ['Do not share OTP, PIN, or transfer funds.']
-      : ['Kisi ko OTP, PIN ya paise wapis na dein.'];
 
     return {
       risk,
       scam_type: parsed.scam_type || defaultType,
-      reasons: Array.isArray(parsed.reasons) && parsed.reasons.length > 0 ? parsed.reasons : defaultReasons,
-      next_steps: Array.isArray(parsed.next_steps) && parsed.next_steps.length > 0 ? parsed.next_steps : defaultSteps,
+      reasons: Array.isArray(parsed.reasons) && parsed.reasons.length > 0
+        ? parsed.reasons
+        : [lang === 'urdu' ? 'اس میں مشکوک علامات پائی گئی ہیں' : 'Is message mein mashkook dabao ke ishare hain.'],
+      next_steps: Array.isArray(parsed.next_steps) && parsed.next_steps.length > 0
+        ? parsed.next_steps
+        : [lang === 'urdu' ? 'کوئی او ٹی پی، پاس ورڈ یا رقم مت بھیجیں' : 'Kisi ko OTP ya paise na dein.'],
     };
   } catch (e) {
-    console.error('Failed to parse Gemma output as JSON:', cleaned);
     return {
       risk: 'medium',
-      scam_type: lang === 'urdu' ? 'غیر مصدقہ پیغام' : lang === 'english' ? 'Unverified Message' : 'Ghair Tasdeeq Shuda Message',
-      reasons: [lang === 'urdu' ? 'پیغام میں مشکوک علامات ہیں' : lang === 'english' ? 'Suspicious indicators detected.' : 'Message ka jaiza liya gaya hai.'],
-      next_steps: [lang === 'urdu' ? 'پہلے متعلقہ ادارے سے تصدیق کریں' : lang === 'english' ? 'Verify via official helpline before taking action.' : 'Pehle helpline se tasdeeq karein.'],
+      scam_type: lang === 'urdu' ? 'غیر مصدقہ پیغام' : 'Unverified Content',
+      reasons: [lang === 'urdu' ? 'میسج کا تکنیکی جائزہ لیا گیا ہے' : 'Message ka jaiza liya gaya hai.'],
+      next_steps: [lang === 'urdu' ? 'ہیلپ لائن سے تصدیق کریں' : 'Pehle helpline se tasdeeq karein.'],
     };
   }
 }
@@ -80,10 +131,25 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Run Local Heuristic Rules Layer
+    // 1. Trace link destination (unmasks where links actually lead)
+    const linkTrace = await traceLinkDestination(message);
+
+    // 2. Run Local Security Rules Layer
     const rulesResult = runSecurityRules(message);
 
-    // 2. Call Google Gemma 4 through official @google/genai SDK
+    // If linkTrace found dangerous final URL, elevate rules
+    if (linkTrace && linkTrace.riskLevel === 'high') {
+      rulesResult.overallRisk = 'high';
+      rulesResult.triggered = true;
+      rulesResult.violations.push({
+        category: 'url',
+        severity: 'high',
+        message: `Link destination leads to dangerous domain (${linkTrace.domain})`,
+        matched: linkTrace.finalUrl,
+      });
+    }
+
+    // 3. Call Google Gemma 4
     const apiKey = process.env.GEMINI_API_KEY;
     let gemmaResult: GemmaAnalysisResult;
     let rawText = '';
@@ -93,9 +159,9 @@ export async function POST(req: Request) {
       fallbackTriggered = true;
       gemmaResult = {
         risk: rulesResult.overallRisk,
-        scam_type: selectedLang === 'urdu' ? 'سیکیورٹی رولز ڈیٹیکشن' : selectedLang === 'english' ? 'Deterministic Security Rules' : 'Rule-Based Security Detection',
-        reasons: [selectedLang === 'urdu' ? 'مقامی سیکیورٹی رولز نے جائزہ لیا' : selectedLang === 'english' ? 'Local security heuristics flagged this message.' : 'Local security heuristics flagged this message.'],
-        next_steps: [selectedLang === 'urdu' ? 'کسی انجان شخص پر بھروسہ نہ کریں' : selectedLang === 'english' ? 'Do not send money or credentials.' : 'Do not send money or credentials.'],
+        scam_type: selectedLang === 'urdu' ? 'سیکیورٹی رولز ڈیٹیکشن' : 'Rule-Based Security Detection',
+        reasons: [selectedLang === 'urdu' ? 'لوکل سیکیورٹی رولز نے جائزہ لیا' : 'Local security heuristics flagged this content.'],
+        next_steps: [selectedLang === 'urdu' ? 'کسی انجان شخص پر بھروسہ نہ کریں' : 'Do not send money or credentials.'],
       };
     } else {
       try {
@@ -109,10 +175,10 @@ export async function POST(req: Request) {
         }
 
         const sourceContext = source === 'audio'
-          ? 'This is a transcript from a WhatsApp voice note or phone call intercepted in Pakistan. Focus on voice social engineering, fake customer service impersonation, and panic induction.'
-          : source === 'link'
-          ? 'This is a link inspection. Focus on phishing domains, lookalike banks, credential harvesters, and fake reward claims.'
-          : 'Analyze this SMS or WhatsApp message for cyber fraud, fake prizes, account block threats, and accidental money transfer claims.';
+          ? 'This is a transcript from a WhatsApp voice note or phone call intercepted in Pakistan. Focus on fake customer service impersonation, urgency, and OTP/PIN harvesting.'
+          : source === 'link' || linkTrace
+          ? `This contains a link (${linkTrace ? `Target: ${linkTrace.finalUrl}` : message}). Focus on lookalike brand phishing, fake bank rewards, and credential theft.`
+          : 'Analyze this SMS or WhatsApp message for Pakistani cyber fraud, fake prizes, account block threats, and accidental money transfer claims.';
 
         const systemPrompt = `You are an elite cybersecurity scam detector for people in Pakistan. ${sourceContext} Look for urgency, fear, requests for money or OTP, fake prizes or jobs, impersonation of Easypaisa, JazzCash, banks, NADRA, BISP or FESCO, and suspicious links. Reply ONLY with valid JSON: {"risk":"high|medium|low","scam_type":"...","reasons":[...],"next_steps":[...]}. ${languageInstruction} Never claim a message is 100% safe. If unsure, choose medium.`;
 
@@ -131,32 +197,29 @@ export async function POST(req: Request) {
         rawText = `Fallback triggered: ${gemmaErr.message || 'API error'}`;
         gemmaResult = {
           risk: rulesResult.overallRisk,
-          scam_type: selectedLang === 'urdu' ? 'سیکیورٹی ہیورسٹک ڈیٹیکشن' : selectedLang === 'english' ? 'Heuristic Security Engine' : 'Heuristic Rules Engine',
+          scam_type: selectedLang === 'urdu' ? 'سیکیورٹی ہیورسٹک ڈیٹیکشن' : 'Heuristic Rules Engine',
           reasons: [
             selectedLang === 'urdu'
               ? 'سرور سے رابطہ عارضی طور پر سست ہے، لوکل سیکیورٹی رولز نے جائزہ لیا'
-              : selectedLang === 'english'
-              ? 'AI network dropped; local deterministic heuristics evaluated the payload.'
-              : 'Gemma 4 was offline; fallback security heuristics analyzed the message.',
+              : 'Gemma 4 was offline; fallback security heuristics analyzed the payload.',
           ],
           next_steps: [
             selectedLang === 'urdu'
               ? 'بینک یا ہیلپ لائن سے تصدیق کے بغیر پیسے نہ بھیجیں'
-              : selectedLang === 'english'
-              ? 'Do not click links or send funds without verbal confirmation.'
               : 'Do not click links or send funds without verbal confirmation.',
           ],
         };
       }
     }
 
-    // 3. Combine both layers through Hybrid Architecture
+    // 4. Combine both layers through Hybrid Architecture
     const combineLang = selectedLang === 'urdu' ? 'urdu' : 'roman';
     const combined = combineSecurityLayers(gemmaResult, rulesResult, combineLang);
 
     return NextResponse.json({
       success: true,
       assessment: combined,
+      linkTrace,
       rules: rulesResult,
       raw: rawText,
       fallbackTriggered,

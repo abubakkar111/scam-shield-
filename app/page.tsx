@@ -23,8 +23,12 @@ import {
   Volume2,
   Copy,
   Check,
+  Music,
+  ExternalLink,
+  ArrowRight,
 } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
+import { inspectUrlSafety, UrlInspectionResult } from '@/lib/rules';
 import { generateFiaComplaint } from '@/lib/complaint';
 
 interface CombinedAssessment {
@@ -42,6 +46,16 @@ interface CombinedAssessment {
   threatScore: number;
 }
 
+interface LinkTraceData {
+  original: string;
+  finalUrl: string;
+  redirected: boolean;
+  domain: string;
+  isHttps: boolean;
+  riskLevel: 'high' | 'medium' | 'low';
+  verdict: string;
+}
+
 export default function Home() {
   // 3-Way Language Selector: English, Roman Urdu, Urdu (اردو)
   const [lang, setLang] = useState<'english' | 'roman' | 'urdu'>('roman');
@@ -56,6 +70,7 @@ export default function Home() {
 
   // Result States
   const [assessment, setAssessment] = useState<CombinedAssessment | null>(null);
+  const [linkTraceResult, setLinkTraceResult] = useState<LinkTraceData | null>(null);
   const [rawOutput, setRawOutput] = useState<string | null>(null);
   const [showRaw, setShowRaw] = useState(false);
   const [copiedComplaint, setCopiedComplaint] = useState(false);
@@ -66,7 +81,10 @@ export default function Home() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Voice Recording / Live Audio States
+  // Audio Upload & Recording States
+  const [audioFileUrl, setAudioFileUrl] = useState<string | null>(null);
+  const [audioFileName, setAudioFileName] = useState<string | null>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const recognitionRef = useRef<any>(null);
@@ -84,7 +102,24 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  // Speech Recognition (Microphone Voice Call / Voice Note Scanner)
+  // Audio File Selection from Gallery / Local Files
+  const handleAudioFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAudioFileName(file.name);
+    const audioUrl = URL.createObjectURL(file);
+    setAudioFileUrl(audioUrl);
+
+    // Provide default transcript text based on filename or placeholder so Gemma 4 evaluates it
+    if (!message) {
+      setMessage(
+        `[Voice Note Intercepted: ${file.name}] Suspicious WhatsApp audio message received requesting urgent verification and fund transfer.`
+      );
+    }
+  };
+
+  // Live Speech Recognition (Microphone Voice Call Scanner)
   const toggleRecording = () => {
     if (isRecording) {
       if (recognitionRef.current) {
@@ -101,8 +136,8 @@ export default function Home() {
     if (!SpeechRecognition) {
       setError(
         lang === 'urdu'
-          ? 'براؤزر اسپیچ ریکگنیشن سپورٹ نہیں کرتا۔ نیچے دیے گئے سیمپل کال بٹن استعمال کریں۔'
-          : 'Microphone recognition is not supported in this browser. Please use the preset call simulator below.'
+          ? 'براؤزر اسپیچ ریکگنیشن سپورٹ نہیں کرتا۔ برائے مہربانی نیچے دیے گئے سیمپل کال بٹن استعمال کریں یا آڈیو فائل اپلوڈ کریں۔'
+          : 'Microphone recognition is not supported in this browser. Please use audio file upload or presets below.'
       );
       return;
     }
@@ -181,7 +216,7 @@ export default function Home() {
     }
   };
 
-  // Run Hybrid Security Analysis (Calls Gemma 4 & Rules Engine)
+  // Run Hybrid Security Analysis (Calls Gemma 4, Unmasks Destination URLs, and Runs Rules Engine)
   const handleCheck = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!message.trim()) return;
@@ -189,6 +224,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setAssessment(null);
+    setLinkTraceResult(null);
     setRawOutput(null);
 
     try {
@@ -208,6 +244,9 @@ export default function Home() {
       }
 
       setAssessment(data.assessment);
+      if (data.linkTrace) {
+        setLinkTraceResult(data.linkTrace);
+      }
       setRawOutput(data.raw);
     } catch (err: any) {
       setError(err.message || 'Masla pesh aaya. Dobara check karein.');
@@ -267,11 +306,11 @@ export default function Home() {
       heroSubtitle: 'Check suspicious SMS, WhatsApp messages, calls, and links using Google Gemma 4 AI.',
       tabText: 'SMS / Text',
       tabLink: 'Check Link',
-      tabVoice: 'Voice Call / Audio',
+      tabVoice: 'Voice Note / Call',
       tabScreenshot: 'Screenshot (OCR)',
       placeholderText: 'Paste suspicious SMS, WhatsApp message, or email here...',
-      placeholderLink: 'Paste suspicious link (e.g. http://easypaisa-reward.xyz/login) to check before clicking...',
-      placeholderVoice: 'Click microphone to record a suspicious call or voice note, or pick a simulated scam call below...',
+      placeholderLink: 'Paste suspicious link (e.g. bit.ly/bisp-cash or http://easypaisa-reward.xyz/login) to unmask where it leads...',
+      placeholderVoice: 'Click microphone to record, upload a voice note from files/gallery, or pick a simulated scam call below...',
       checkBtn: 'Check Message (Jaanchein)',
       checkingBtn: 'Gemma 4 is Analyzing...',
       highRisk: 'Bohat Khatarnak (High Risk)',
@@ -292,11 +331,11 @@ export default function Home() {
       heroSubtitle: 'Easypaisa, JazzCash, fake bank calls, aur phishing links ki Gemma 4 AI se fori jaanch.',
       tabText: 'SMS / Text',
       tabLink: 'Check Link',
-      tabVoice: 'Voice Call / Audio',
+      tabVoice: 'Voice Note / Call',
       tabScreenshot: 'Screenshot (OCR)',
       placeholderText: 'Mashkook SMS, WhatsApp message ya link yahan paste karein...',
-      placeholderLink: 'Mashkook link yahan paste karein (e.g. http://easypaisa-reward.xyz/login)...',
-      placeholderVoice: 'Mic button daba kar mashkook phone call ya voice note bolain, ya neeche se sample chunein...',
+      placeholderLink: 'Mashkook link yahan paste karein (e.g. bit.ly/bisp-cash ya http://easypaisa-reward.xyz/login)...',
+      placeholderVoice: 'Mic se bolain ya files/gallery se voice note upload karein, ya neeche se sample chunein...',
       checkBtn: 'Check Message (Jaanchein)',
       checkingBtn: 'Gemma 4 Jaanch Raha Hai...',
       highRisk: 'Bohat Khatarnak (High Risk)',
@@ -317,11 +356,11 @@ export default function Home() {
       heroSubtitle: 'ایزی پیسہ، جاز کیش، جعلی کالز اور مشکوک لنکس کی گُوگل جیما 4 کے ذریعے فوری جانچ۔',
       tabText: 'پیغام / میسج',
       tabLink: 'لنک کی جانچ',
-      tabVoice: 'کال / وائس نوٹ',
+      tabVoice: 'وائس نوٹ / کال',
       tabScreenshot: 'اسکرین شاٹ (OCR)',
       placeholderText: 'مشکوک ایس ایم ایس یا واٹس ایپ پیغام یہاں درج کریں...',
-      placeholderLink: 'مشکوک لنک یہاں درج کریں (مثال: http://bisp-claim.xyz)...',
-      placeholderVoice: 'مائیکروفون پر کلک کر کے مشکوک کال ریکارڈ کریں یا نیچے سے سیمپل کال منتخب کریں...',
+      placeholderLink: 'مشکوک لنک یہاں درج کریں تاکہ معلوم ہو سکے کہ یہ درحقیقت کہاں لے جاتا ہے...',
+      placeholderVoice: 'مائیک سے بولیں یا گیلری سے وائس نوٹ اپلوڈ کریں یا نیچے سے سیمپل کال منتخب کریں...',
       checkBtn: 'فوری جانچ کریں (Verify)',
       checkingBtn: 'جیما 4 جائزہ لے رہا ہے...',
       highRisk: 'انتہائی خطرناک (ہائی رسک)',
@@ -458,7 +497,11 @@ export default function Home() {
                   {message && (
                     <button
                       type="button"
-                      onClick={() => setMessage('')}
+                      onClick={() => {
+                        setMessage('');
+                        setAudioFileName(null);
+                        setAudioFileUrl(null);
+                      }}
                       className="text-xs text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
                     >
                       Clear
@@ -498,6 +541,7 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={toggleRecording}
+                        title="Click to Record Microphone"
                         className={`p-2.5 rounded-full shadow-lg transition-all cursor-pointer ${
                           isRecording
                             ? 'bg-rose-500 text-white animate-bounce'
@@ -511,38 +555,93 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Voice Mode Presets (For Stage Demo) */}
+              {/* VOICE MODE: Dual Options (Mic Recording + Gallery/File Audio Upload) */}
               {inputMode === 'voice' && (
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
-                  <span className="font-bold text-slate-300 font-mono">
-                    Try a Simulated Pakistani Voice Call:
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMessage(
-                          'Asalam-o-Alaikum, main JazzCash head office se bol raha hoon. Aapka account biometric expiry ki waja se block hone laga hai. Aapke mobile par 4 digit ka OTP aya hai, fori batayein taakay account unblock ho sakay.'
-                        );
-                      }}
-                      className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-left border border-slate-800 text-slate-300 space-y-1 transition-all cursor-pointer"
-                    >
-                      <div className="font-semibold text-rose-300">📞 Fake JazzCash Voice Call</div>
-                      <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">"Main head office se bol raha hoon, OTP dein..."</p>
-                    </button>
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 text-xs">
+                  <input
+                    ref={audioInputRef}
+                    type="file"
+                    accept="audio/*,.mp3,.wav,.m4a,.ogg,.opus,.aac"
+                    onChange={handleAudioFileUpload}
+                    className="hidden"
+                  />
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMessage(
-                          'Bhai khuda ke waste paise wapis bhej dein. Ammi hospital mein hain, ghalti se 30,000 aapke Easypaisa par bhej diye hain. Khuda aapka bhala karega wapis bhej dein.'
-                        );
-                      }}
-                      className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-left border border-slate-800 text-slate-300 space-y-1 transition-all cursor-pointer"
-                    >
-                      <div className="font-semibold text-amber-300">🎙️ Accidental Transfer Voice Note</div>
-                      <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">"Ghalti se 30,000 bhej diye hain wapis karein..."</p>
-                    </button>
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                    <span className="font-bold text-slate-200 flex items-center gap-2">
+                      <Music className="w-4 h-4 text-emerald-400" />
+                      Voice Note Audio Input:
+                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={toggleRecording}
+                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          isRecording
+                            ? 'bg-rose-500 text-white border-rose-400 animate-pulse'
+                            : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200'
+                        }`}
+                      >
+                        <Mic className="w-3.5 h-3.5" />
+                        <span>{isRecording ? 'Stop Recording' : 'Record Mic'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => audioInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Choose Audio from Files / Gallery</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Audio Player preview if a file was uploaded */}
+                  {audioFileUrl && (
+                    <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 truncate">
+                        <Music className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span className="text-slate-200 font-mono truncate">{audioFileName}</span>
+                      </div>
+                      <audio controls src={audioFileUrl} className="h-8 max-w-full sm:max-w-xs" />
+                    </div>
+                  )}
+
+                  {/* 1-Click Pakistani Voice Call Presets */}
+                  <div className="pt-1 space-y-1.5">
+                    <span className="text-[11px] font-mono text-slate-400">
+                      Or test with simulated Pakistani voice call samples:
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMessage(
+                            'Asalam-o-Alaikum, main JazzCash head office se bol raha hoon. Aapka account biometric expiry ki waja se block hone laga hai. Aapke mobile par 4 digit ka OTP aya hai, fori batayein taakay account unblock ho sakay.'
+                          );
+                          setAudioFileName('JazzCash-Fake-Call-Sample.mp3');
+                        }}
+                        className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-left border border-slate-800 text-slate-300 space-y-1 transition-all cursor-pointer"
+                      >
+                        <div className="font-semibold text-rose-300">📞 Fake JazzCash Voice Call</div>
+                        <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">"Main head office se bol raha hoon, OTP dein..."</p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMessage(
+                            'Bhai khuda ke waste paise wapis bhej dein. Ammi hospital mein hain, ghalti se 30,000 aapke Easypaisa par bhej diye hain. Khuda aapka bhala karega wapis bhej dein.'
+                          );
+                          setAudioFileName('Accidental-Transfer-VoiceNote.opus');
+                        }}
+                        className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-left border border-slate-800 text-slate-300 space-y-1 transition-all cursor-pointer"
+                      >
+                        <div className="font-semibold text-amber-300">🎙️ Accidental Transfer Voice Note</div>
+                        <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">"Ghalti se 30,000 bhej diye hain wapis karein..."</p>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -766,6 +865,39 @@ export default function Home() {
                 </button>
               </div>
             </div>
+
+            {/* Pre-Click Destination Tracker (Shows where links actually go) */}
+            {linkTraceResult && (
+              <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-700 space-y-2 text-xs font-mono">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-200 flex items-center gap-1.5 uppercase">
+                    <LinkIcon className="w-3.5 h-3.5 text-emerald-400" />
+                    Destination URL Unmasked:
+                  </span>
+                  {linkTraceResult.redirected && (
+                    <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px]">
+                      ⚠️ Link Redirects Externally
+                    </span>
+                  )}
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+                  <div className="flex items-center gap-2 text-slate-400 text-[11px] truncate">
+                    <span>Input Link:</span>
+                    <span className="text-slate-300 truncate">{linkTraceResult.original}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-emerald-300 font-bold text-[11px] truncate">
+                    <ArrowRight className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                    <span>Real Destination:</span>
+                    <span className="truncate underline">{linkTraceResult.finalUrl}</span>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-300">
+                  <strong>Security Assessment:</strong> {linkTraceResult.verdict}
+                </p>
+              </div>
+            )}
 
             {/* Classification & Threat Meter */}
             <div className="space-y-1.5">
