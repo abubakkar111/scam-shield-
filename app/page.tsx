@@ -16,7 +16,6 @@ import {
   Upload,
   Image as ImageIcon,
   FileText,
-  Activity,
   Cpu,
   Mic,
   MicOff,
@@ -24,17 +23,8 @@ import {
   Volume2,
   Copy,
   Check,
-  Radio,
-  FileWarning,
-  ExternalLink,
-  PhoneCall,
-  Server,
-  Layers,
-  Award,
-  BookOpen,
 } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
-import { inspectUrlSafety, UrlInspectionResult } from '@/lib/rules';
 import { generateFiaComplaint } from '@/lib/complaint';
 
 interface CombinedAssessment {
@@ -53,25 +43,22 @@ interface CombinedAssessment {
 }
 
 export default function Home() {
-  // 3-Way Language Selector
+  // 3-Way Language Selector: English, Roman Urdu, Urdu (اردو)
   const [lang, setLang] = useState<'english' | 'roman' | 'urdu'>('roman');
 
-  // Input Mode (Text, Link Shield, Voice Call/Note, Screenshot OCR)
+  // Input Modes: Text, Link, Voice Note/Call, Screenshot OCR
   const [inputMode, setInputMode] = useState<'text' | 'link' | 'voice' | 'screenshot'>('text');
 
-  // Input Content
+  // Input & Processing States
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Result Assessment
+  // Result States
   const [assessment, setAssessment] = useState<CombinedAssessment | null>(null);
-  const [urlInspection, setUrlInspection] = useState<UrlInspectionResult | null>(null);
   const [rawOutput, setRawOutput] = useState<string | null>(null);
-  const [fallbackActive, setFallbackActive] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
   const [copiedComplaint, setCopiedComplaint] = useState(false);
-  const [showBenchmarkModal, setShowBenchmarkModal] = useState(false);
 
   // Screenshot OCR States
   const [ocrLoading, setOcrLoading] = useState(false);
@@ -83,23 +70,6 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const recognitionRef = useRef<any>(null);
-
-  // Simulated Live Threat Ticker across Pakistani Cities
-  const threatFeeds = [
-    { city: 'Faisalabad', text: 'Fake BISP Rs. 25,000 disbursement phishing link blocked (bisp-claim.xyz)' },
-    { city: 'Lahore', text: 'Accidental Easypaisa reversal scam intercepted (Rs. 45,000 claim)' },
-    { city: 'Karachi', text: 'Job from home task deposit fraud flagged on WhatsApp' },
-    { city: 'Rawalpindi', text: 'Fake FESCO bill payment 30% discount phishing URL neutralized' },
-    { city: 'Islamabad', text: 'Genuine HBL 2FA OTP transaction verified clean' },
-  ];
-  const [tickerIndex, setTickerIndex] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTickerIndex((prev) => (prev + 1) % threatFeeds.length);
-    }, 4500);
-    return () => clearInterval(timer);
-  }, []);
 
   // Timer for voice recording
   useEffect(() => {
@@ -114,17 +84,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isRecording]);
 
-  // Handle URL Pre-Inspection in Real-Time
-  useEffect(() => {
-    if (message.includes('http://') || message.includes('https://') || message.includes('.com') || message.includes('.xyz') || message.includes('.top') || message.includes('.click')) {
-      const inspected = inspectUrlSafety(message);
-      setUrlInspection(inspected);
-    } else {
-      setUrlInspection(null);
-    }
-  }, [message]);
-
-  // Speech Recognition (Microphone Fake Call / Voice Note Scanner)
+  // Speech Recognition (Microphone Voice Call / Voice Note Scanner)
   const toggleRecording = () => {
     if (isRecording) {
       if (recognitionRef.current) {
@@ -141,8 +101,8 @@ export default function Home() {
     if (!SpeechRecognition) {
       setError(
         lang === 'urdu'
-          ? 'آپ کا براؤزر مائیک اسپیچ ریکگنیشن کو سپورٹ نہیں کرتا۔ برائے مہربانی نیچے دیے گئے سیمپل کال بٹن استعمال کریں۔'
-          : 'Your browser does not support SpeechRecognition. Please use the preset call simulator below.'
+          ? 'براؤزر اسپیچ ریکگنیشن سپورٹ نہیں کرتا۔ نیچے دیے گئے سیمپل کال بٹن استعمال کریں۔'
+          : 'Microphone recognition is not supported in this browser. Please use the preset call simulator below.'
       );
       return;
     }
@@ -221,7 +181,7 @@ export default function Home() {
     }
   };
 
-  // Run Hybrid Security Analysis
+  // Run Hybrid Security Analysis (Calls Gemma 4 & Rules Engine)
   const handleCheck = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!message.trim()) return;
@@ -249,7 +209,6 @@ export default function Home() {
 
       setAssessment(data.assessment);
       setRawOutput(data.raw);
-      setFallbackActive(!!data.fallbackTriggered);
     } catch (err: any) {
       setError(err.message || 'Masla pesh aaya. Dobara check karein.');
     } finally {
@@ -287,8 +246,8 @@ export default function Home() {
       {
         incidentId: `PK-SOC-${Math.floor(100000 + Math.random() * 900000)}`,
         timestamp: new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' }),
-        senderInfo: 'Suspicious Channel / Intercepted Payload',
-        scamType: assessment?.scamType || 'Cyber Fraud & Social Engineering Attempt',
+        senderInfo: 'Suspicious Sender',
+        scamType: assessment?.scamType || 'Fraud / Social Engineering Attempt',
         threatLevel: assessment?.finalRisk || 'high',
         messageContent: message.trim(),
         evidencePoints: assessment?.reasons || ['Urgency and psychological manipulation detected by Google Gemma 4.'],
@@ -301,61 +260,48 @@ export default function Home() {
     setTimeout(() => setCopiedComplaint(false), 2000);
   };
 
-  // 10-Case Benchmark Data (Defence Proof)
-  const benchmarkCases = [
-    { name: 'Easypaisa Accidental Transfer Scam', expected: 'HIGH', detected: 'HIGH', status: 'PASSED' },
-    { name: 'Fake BISP 25,000 Scheme Link (bisp-claim.xyz)', expected: 'HIGH', detected: 'HIGH', status: 'PASSED' },
-    { name: 'JazzCash Account Block Threat Link', expected: 'HIGH', detected: 'HIGH', status: 'PASSED' },
-    { name: 'Jeeto Pakistan / Car Prize Advance Fee', expected: 'HIGH', detected: 'HIGH', status: 'PASSED' },
-    { name: 'Bank Card Expired - Steal OTP Call', expected: 'HIGH', detected: 'HIGH', status: 'PASSED' },
-    { name: 'Daily Earning Task Scam (Job from home)', expected: 'HIGH', detected: 'HIGH', status: 'PASSED' },
-    { name: 'FESCO Electricity Bill Discount Link', expected: 'MEDIUM', detected: 'MEDIUM', status: 'PASSED' },
-    { name: 'Genuine HBL Banking OTP Message', expected: 'LOW', detected: 'LOW', status: 'PASSED' },
-    { name: 'Genuine Easypaisa Receipt Notification', expected: 'LOW', detected: 'LOW', status: 'PASSED' },
-    { name: 'Genuine WhatsApp Social Conversation', expected: 'LOW', detected: 'LOW', status: 'PASSED' },
-  ];
-
-  // Language Dictionary for Clean UI
+  // UI Translation Dictionary
   const t = {
     english: {
       heroTitle: 'Scam Shield Pakistan',
-      heroSubtitle: 'Instant cyber fraud, fake call, and phishing link defense using Google Gemma 4 AI.',
-      tabText: 'Text / SMS',
-      tabLink: 'Pre-Click Link Shield',
-      tabVoice: 'Fake Call / Voice Note',
+      heroSubtitle: 'Check suspicious SMS, WhatsApp messages, calls, and links using Google Gemma 4 AI.',
+      tabText: 'SMS / Text',
+      tabLink: 'Check Link',
+      tabVoice: 'Voice Call / Audio',
       tabScreenshot: 'Screenshot (OCR)',
       placeholderText: 'Paste suspicious SMS, WhatsApp message, or email here...',
-      placeholderLink: 'Paste suspicious link (e.g. http://easypaisa-reward.xyz/login) to inspect BEFORE opening...',
-      placeholderVoice: 'Click microphone to record a suspicious call or voice note, or choose a simulated Pakistani scam call below...',
-      checkBtn: 'Inspect & Verify',
+      placeholderLink: 'Paste suspicious link (e.g. http://easypaisa-reward.xyz/login) to check before clicking...',
+      placeholderVoice: 'Click microphone to record a suspicious call or voice note, or pick a simulated scam call below...',
+      checkBtn: 'Check Message (Jaanchein)',
       checkingBtn: 'Gemma 4 is Analyzing...',
-      highRisk: 'High Risk Threat Detected',
-      medRisk: 'Caution / Suspicious Activity',
-      lowRisk: 'No Obvious Threats Detected',
-      highDesc: 'High probability of financial fraud, credential harvesting, or social engineering.',
-      medDesc: 'Suspicious attributes detected. Do not click or send funds without verbal helpline confirmation.',
-      lowDesc: 'No immediate red flags detected, but remain cautious.',
+      highRisk: 'Bohat Khatarnak (High Risk)',
+      medRisk: 'Ehtiyat Karein (Medium Risk)',
+      lowRisk: 'Koi Wazeh Khatra Nahi Mila (Low Risk)',
+      highDesc: 'High risk of fraud, accidental transfer trick, or credential theft.',
+      medDesc: 'Suspicious indicators found. Do not send money or click without helpline verification.',
+      lowDesc: 'No obvious red flags found. Never assume a message is 100% safe.',
       listenBtn: '🔊 Listen Aloud',
       copyComplaint: '📋 Copy FIA Complaint',
-      reasonsTitle: 'Threat Indicators Detected:',
-      stepsTitle: 'Immediate Protective Actions:',
-      disclaimer: '⚠️ Educational cybersecurity intelligence tool. Aligned with State Bank of Pakistan Guidelines.',
+      reasonsTitle: 'Why This Was Flagged (Wajuhat):',
+      stepsTitle: 'What You Should Do (Agle Iqdamat):',
+      exampleLabel: 'Try an example:',
+      disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / This is guidance, not a guarantee.',
     },
     roman: {
       heroTitle: 'Scam Shield Pakistan',
       heroSubtitle: 'Easypaisa, JazzCash, fake bank calls, aur phishing links ki Gemma 4 AI se fori jaanch.',
-      tabText: 'Text / SMS',
-      tabLink: 'Pre-Click Link Shield',
-      tabVoice: 'Fake Call / Voice Note',
+      tabText: 'SMS / Text',
+      tabLink: 'Check Link',
+      tabVoice: 'Voice Call / Audio',
       tabScreenshot: 'Screenshot (OCR)',
       placeholderText: 'Mashkook SMS, WhatsApp message ya link yahan paste karein...',
-      placeholderLink: 'Kholne se pehle mashkook link yahan paste karein (e.g. http://easypaisa-cash.xyz)...',
-      placeholderVoice: 'Mic button daba kar mashkook phone call ya voice note record karein, ya neeche se sample chunein...',
+      placeholderLink: 'Mashkook link yahan paste karein (e.g. http://easypaisa-reward.xyz/login)...',
+      placeholderVoice: 'Mic button daba kar mashkook phone call ya voice note bolain, ya neeche se sample chunein...',
       checkBtn: 'Check Message (Jaanchein)',
       checkingBtn: 'Gemma 4 Jaanch Raha Hai...',
       highRisk: 'Bohat Khatarnak (High Risk)',
       medRisk: 'Ehtiyat Karein (Medium Risk)',
-      lowRisk: 'Koi Wazeh Khatra Nahi Mila',
+      lowRisk: 'Koi Wazeh Khatra Nahi Mila (Low Risk)',
       highDesc: 'Is message ya call mein 90%+ fraud ya raqam churanay ke qawi asarat hain.',
       medDesc: 'Kuch mashkook nishaniyan mili hain. Baghair tasdeeq koi amal na karein.',
       lowDesc: 'Message mein fori scam signs nahi mile, lekin hamesha hoshiyar rahein.',
@@ -363,61 +309,46 @@ export default function Home() {
       copyComplaint: '📋 Copy FIA Complaint',
       reasonsTitle: 'Khatray Ki Wajuhat (Why Flagged):',
       stepsTitle: 'Agle Hifazati Iqdamat (Next Steps):',
-      disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / State Bank of Pakistan (SBP) Framework Compliant.',
+      exampleLabel: 'Try an example:',
+      disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / This is guidance, not a guarantee.',
     },
     urdu: {
       heroTitle: 'اسکیم شیلڈ پاکستان',
       heroSubtitle: 'ایزی پیسہ، جاز کیش، جعلی کالز اور مشکوک لنکس کی گُوگل جیما 4 کے ذریعے فوری جانچ۔',
       tabText: 'پیغام / میسج',
-      tabLink: 'مشکوک لنک شیلڈ',
-      tabVoice: 'جعلی کال / وائس نوٹ',
+      tabLink: 'لنک کی جانچ',
+      tabVoice: 'کال / وائس نوٹ',
       tabScreenshot: 'اسکرین شاٹ (OCR)',
       placeholderText: 'مشکوک ایس ایم ایس یا واٹس ایپ پیغام یہاں درج کریں...',
-      placeholderLink: 'کلک کرنے سے پہلے مشکوک لنک یہاں پیسٹ کریں (مثال: http://bisp-claim.xyz)...',
-      placeholderVoice: 'مائیکروفون پر کلک کر کے مشکوک کال یا وائس نوٹ بولیں یا نیچے سے سیمپل کال منتخب کریں...',
+      placeholderLink: 'مشکوک لنک یہاں درج کریں (مثال: http://bisp-claim.xyz)...',
+      placeholderVoice: 'مائیکروفون پر کلک کر کے مشکوک کال ریکارڈ کریں یا نیچے سے سیمپل کال منتخب کریں...',
       checkBtn: 'فوری جانچ کریں (Verify)',
       checkingBtn: 'جیما 4 جائزہ لے رہا ہے...',
       highRisk: 'انتہائی خطرناک (ہائی رسک)',
       medRisk: 'احتیاط برتیں (درمیانہ خطرہ)',
       lowRisk: 'کوئی واضح خطرہ نہیں ملا',
-      highDesc: 'اس پیغام یا کال میں مالی فراڈ یا ذاتی معلومات چرانے کے ٹھوس شواہد موجود ہیں۔',
+      highDesc: 'اس پیغام یا کال میں مالی فراڈ یا رقم چرانے کے واضح شواہد موجود ہیں۔',
       medDesc: 'کچھ مشکوک علامات پائی گئی ہیں۔ ہیلپ لائن کی تصدیق کے بغیر کوئی عمل نہ کریں۔',
       lowDesc: 'کوئی فوری خطرہ ظاہر نہیں ہوا، مگر ہمیشہ محتاط رہیں۔',
       listenBtn: '🔊 سنیں (صوتی انتباہ)',
       copyComplaint: '📋 ایف آئی اے شکایت کاپی کریں',
       reasonsTitle: 'خطرے کی وجوہات (شواہد):',
       stepsTitle: 'حفاظتی اقدامات (کیا کریں):',
-      disclaimer: '⚠️ یہ سیکیورٹی رہنمائی کے لیے ہے، حتمی قانونی فیصلہ نہیں۔ اسٹیٹ بینک فریم ورک سے ہم آہنگ۔',
+      exampleLabel: 'مثال آزمائیں:',
+      disclaimer: '⚠️ یہ رہنمائی کے لیے ہے، حتمی قانونی فیصلہ نہیں۔',
     },
   }[lang];
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center selection:bg-emerald-500 selection:text-slate-950 pb-16 font-sans">
-      {/* 1. Live Threat Ticker */}
-      <div className="w-full bg-slate-900 border-b border-slate-800 py-1.5 px-4 text-xs font-mono">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-emerald-400 shrink-0">
-            <Radio className="w-3.5 h-3.5 animate-pulse" />
-            <span className="font-bold uppercase tracking-wider text-[11px]">Live Threat Shield:</span>
-          </div>
-          <div className="flex-1 truncate text-slate-300">
-            <span className="text-emerald-300 font-semibold">[{threatFeeds[tickerIndex].city}]</span>{' '}
-            <span>{threatFeeds[tickerIndex].text}</span>
-          </div>
-          <span className="hidden sm:inline text-[11px] text-slate-500 font-mono">
-            Gemma 4 (26B-A4B-IT) Active
-          </span>
-        </div>
-      </div>
-
-      {/* 2. Top Header & 3-Way Language Switcher */}
-      <header className="w-full max-w-5xl px-4 pt-6 pb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* Top Header & Clean Language Switcher */}
+      <header className="w-full max-w-3xl px-4 pt-8 pb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-500/10 shrink-0">
             <ShieldAlert className="w-5 h-5" />
           </div>
           <div>
-            <h1 className={`text-xl sm:text-2xl font-black text-white tracking-tight ${lang === 'urdu' ? 'font-serif' : ''}`}>
+            <h1 className={`text-2xl font-black text-white tracking-tight ${lang === 'urdu' ? 'font-serif' : ''}`}>
               {t.heroTitle}
             </h1>
             <p className={`text-xs text-slate-400 ${lang === 'urdu' ? 'font-serif' : ''}`}>
@@ -427,11 +358,11 @@ export default function Home() {
         </div>
 
         {/* 3-Way Language Toggle */}
-        <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 shadow-inner">
+        <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 shadow-inner shrink-0">
           <button
             type="button"
             onClick={() => setLang('english')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               lang === 'english' ? 'bg-emerald-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -440,7 +371,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setLang('roman')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               lang === 'roman' ? 'bg-emerald-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -449,7 +380,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setLang('urdu')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               lang === 'urdu' ? 'bg-emerald-500 text-slate-950 shadow-sm font-serif' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -458,9 +389,9 @@ export default function Home() {
         </div>
       </header>
 
-      {/* 3. Main Operational Container */}
-      <div className="w-full max-w-5xl px-4 space-y-5">
-        {/* Unified 4-Mode Input Switcher */}
+      {/* Main Single-Card Container */}
+      <div className="w-full max-w-3xl px-4 space-y-5">
+        {/* Clean 4-Way Mode Tabs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-slate-900/90 rounded-2xl border border-slate-800">
           <button
             type="button"
@@ -498,10 +429,7 @@ export default function Home() {
             }`}
           >
             <Mic className="w-4 h-4" />
-            <span className="flex items-center gap-1">
-              <span>{t.tabVoice}</span>
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-            </span>
+            <span>{t.tabVoice}</span>
           </button>
 
           <button
@@ -520,55 +448,18 @@ export default function Home() {
 
         {/* Input Card */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-2xl backdrop-blur-md space-y-4">
-          {/* Pre-Click Live Link Warning Banner */}
-          {urlInspection && (
-            <div
-              className={`p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs transition-all ${
-                urlInspection.riskLevel === 'high'
-                  ? 'bg-rose-950/40 border-rose-500/60 text-rose-300'
-                  : urlInspection.riskLevel === 'medium'
-                  ? 'bg-amber-950/40 border-amber-500/60 text-amber-300'
-                  : 'bg-emerald-950/40 border-emerald-500/60 text-emerald-300'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <FileWarning className="w-5 h-5 shrink-0 mt-0.5" />
-                <div>
-                  <div className="flex items-center gap-2 font-mono">
-                    <span className="font-bold uppercase tracking-wider">Pre-Click Link Shield:</span>
-                    <span className="font-bold underline">{urlInspection.domain}</span>
-                    {!urlInspection.isHttps && <span className="text-rose-400 font-bold">[INSECURE HTTP]</span>}
-                  </div>
-                  <p className="mt-1 text-slate-200">{urlInspection.verdict}</p>
-                </div>
-              </div>
-              <span
-                className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase font-mono tracking-wider shrink-0 ${
-                  urlInspection.riskLevel === 'high'
-                    ? 'bg-rose-500 text-white'
-                    : urlInspection.riskLevel === 'medium'
-                    ? 'bg-amber-500 text-slate-950'
-                    : 'bg-emerald-500 text-slate-950'
-                }`}
-              >
-                {urlInspection.riskLevel === 'high' ? 'DO NOT CLICK' : 'CAUTION'}
-              </span>
-            </div>
-          )}
-
-          {/* MODE: Text / Link / Voice Input Box */}
           {inputMode !== 'screenshot' ? (
             <form onSubmit={handleCheck} className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="content-input" className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                  <label htmlFor="main-input" className="block text-xs font-bold uppercase tracking-wider text-slate-300">
                     {inputMode === 'link' ? t.tabLink : inputMode === 'voice' ? t.tabVoice : t.tabText}
                   </label>
                   {message && (
                     <button
                       type="button"
                       onClick={() => setMessage('')}
-                      className="text-xs text-slate-400 hover:text-rose-400 transition-colors"
+                      className="text-xs text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
                     >
                       Clear
                     </button>
@@ -577,7 +468,7 @@ export default function Home() {
 
                 <div className="relative">
                   <textarea
-                    id="content-input"
+                    id="main-input"
                     rows={4}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
@@ -595,7 +486,7 @@ export default function Home() {
                     required
                   />
 
-                  {/* Mic button floating inside textarea for Voice Mode */}
+                  {/* Mic floating button for Voice Mode */}
                   {inputMode === 'voice' && (
                     <div className="absolute bottom-3 right-3 flex items-center gap-2">
                       {isRecording && (
@@ -620,52 +511,47 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Voice Mode Quick Call Simulator Buttons */}
+              {/* Voice Mode Presets (For Stage Demo) */}
               {inputMode === 'voice' && (
                 <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
-                  <span className="font-bold text-slate-300 font-mono flex items-center gap-1.5">
-                    <Radio className="w-3.5 h-3.5 text-emerald-400" />
-                    Stage Demo: 1-Click Fake Pakistani Voice Call Presets:
+                  <span className="font-bold text-slate-300 font-mono">
+                    Try a Simulated Pakistani Voice Call:
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => {
                         setMessage(
-                          'Asalam-o-Alaikum, main JazzCash head office Islamabad se bol raha hoon. Aapka account biometric expiry ki waja se block hone laga hai. Aapke mobile par abhi 4 digit ka OTP aya hai, fori batayein taakay account unblock ho sakay.'
+                          'Asalam-o-Alaikum, main JazzCash head office se bol raha hoon. Aapka account biometric expiry ki waja se block hone laga hai. Aapke mobile par 4 digit ka OTP aya hai, fori batayein taakay account unblock ho sakay.'
                         );
                       }}
-                      className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-left border border-slate-800 hover:border-slate-700 text-slate-300 space-y-1 transition-all"
+                      className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-left border border-slate-800 text-slate-300 space-y-1 transition-all cursor-pointer"
                     >
                       <div className="font-semibold text-rose-300">📞 Fake JazzCash Voice Call</div>
-                      <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">
-                        "Main head office se bol raha hoon, OTP share karein..."
-                      </p>
+                      <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">"Main head office se bol raha hoon, OTP dein..."</p>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => {
                         setMessage(
-                          'Bhai khuda ke waste paise wapis bhej dein. Meri ammi hospital mein dakhil hain, ghalti se 30,000 aapke Easypaisa account par bhej diye hain. Khuda aapka bhala karega wapis bhej dein.'
+                          'Bhai khuda ke waste paise wapis bhej dein. Ammi hospital mein hain, ghalti se 30,000 aapke Easypaisa par bhej diye hain. Khuda aapka bhala karega wapis bhej dein.'
                         );
                       }}
-                      className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-left border border-slate-800 hover:border-slate-700 text-slate-300 space-y-1 transition-all"
+                      className="p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-left border border-slate-800 text-slate-300 space-y-1 transition-all cursor-pointer"
                     >
                       <div className="font-semibold text-amber-300">🎙️ Accidental Transfer Voice Note</div>
-                      <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">
-                        "Ghalti se 30,000 bhej diye hain wapis kar dein..."
-                      </p>
+                      <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">"Ghalti se 30,000 bhej diye hain wapis karein..."</p>
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Action Bar */}
+              {/* Action Button */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
                 <span className="text-xs text-slate-400 flex items-center gap-1.5 font-mono">
                   <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-                  Dual-Engine: Gemma 4 (`gemma-4-26b-a4b-it`) + Rules
+                  Google Gemma 4 (`gemma-4-26b-a4b-it`)
                 </span>
 
                 <button
@@ -688,7 +574,7 @@ export default function Home() {
               </div>
             </form>
           ) : (
-            /* MODE: Screenshot OCR */
+            /* Screenshot OCR Tab */
             <div className="space-y-4">
               <input
                 ref={fileInputRef}
@@ -710,7 +596,7 @@ export default function Home() {
                     Upload SMS or WhatsApp Screenshot
                   </p>
                   <p className="text-xs text-slate-400 mt-1 font-mono">
-                    On-device OCR extracts the text directly into the inspection engine.
+                    OCR extracts text from image directly into the analysis engine.
                   </p>
                 </div>
               </div>
@@ -742,17 +628,16 @@ export default function Home() {
                   />
                   <div className="text-xs space-y-1">
                     <p className="font-semibold text-slate-200">Screenshot Loaded</p>
-                    <p className="text-slate-400">
-                      Text extracted. Click the Text tab above to inspect with Gemma 4!
-                    </p>
+                    <p className="text-slate-400">Text extracted. Click Text tab above to inspect!</p>
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* 3 Quick Example Buttons */}
+          {/* 3 Clear Clickable Examples */}
           <div className="pt-3 border-t border-slate-800/80">
+            <p className="text-xs text-slate-400 mb-2 font-mono">{t.exampleLabel}</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
@@ -760,7 +645,7 @@ export default function Home() {
                   setMessage('0300-1234567 se 25,000 ghalti se bhej diye hain, baraye meharbani wapis bhej dein apka bhala hoga.');
                   setInputMode('text');
                 }}
-                className="p-2.5 text-left rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 text-xs space-y-1 group transition-all"
+                className="p-2.5 text-left rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 text-xs space-y-1 group transition-all cursor-pointer"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-200 group-hover:text-emerald-400">Easypaisa Scam</span>
@@ -775,11 +660,11 @@ export default function Home() {
                   setMessage('Benazir Income Support: 25,000 wazifa manzoor hua. Link par register karein: http://bisp-wazifa-claim.xyz/verify');
                   setInputMode('link');
                 }}
-                className="p-2.5 text-left rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 text-xs space-y-1 group transition-all"
+                className="p-2.5 text-left rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 text-xs space-y-1 group transition-all cursor-pointer"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-200 group-hover:text-emerald-400">Fake BISP Link</span>
-                  <span className="text-[10px] text-amber-400 font-mono">🟡 Phishing</span>
+                  <span className="text-[10px] text-amber-400 font-mono">🟡 Link</span>
                 </div>
                 <p className="text-slate-400 line-clamp-1 text-[11px] font-mono">bisp-wazifa-claim.xyz/verify</p>
               </button>
@@ -790,7 +675,7 @@ export default function Home() {
                   setMessage('HBL Alert: Your OTP for internet banking login is 591823. Valid for 5 mins. NEVER share this OTP with anyone.');
                   setInputMode('text');
                 }}
-                className="p-2.5 text-left rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 text-xs space-y-1 group transition-all"
+                className="p-2.5 text-left rounded-xl bg-slate-950/80 hover:bg-slate-800 border border-slate-800 text-xs space-y-1 group transition-all cursor-pointer"
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-200 group-hover:text-emerald-400">Genuine Bank OTP</span>
@@ -802,7 +687,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Error Notification */}
+        {/* Error Alert */}
         {error && (
           <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-start gap-3 text-sm">
             <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
@@ -813,17 +698,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Fallback Banner */}
-        {fallbackActive && (
-          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-center gap-2.5 text-xs">
-            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>
-              <strong>Local Fail-Safe:</strong> Evaluated via deterministic rules because AI network connection was unavailable.
-            </span>
-          </div>
-        )}
-
-        {/* Result Card */}
+        {/* The Result Card (Appears ONLY after Check) */}
         {assessment && (
           <section
             className={`border rounded-2xl p-5 sm:p-7 transition-all space-y-5 shadow-2xl backdrop-blur-md ${
@@ -834,7 +709,7 @@ export default function Home() {
                 : 'bg-emerald-950/30 border-emerald-500/60'
             }`}
           >
-            {/* Verdict Header */}
+            {/* Header: Traffic Light Status */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-700/60">
               <div className="flex items-center gap-3.5">
                 {assessment.finalRisk === 'high' ? (
@@ -895,8 +770,8 @@ export default function Home() {
             {/* Classification & Threat Meter */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-300 font-bold">Category: {assessment.scamType}</span>
-                <span className="text-slate-400">Threat Severity: {assessment.threatScore}%</span>
+                <span className="text-slate-300 font-bold">Scam Type: {assessment.scamType}</span>
+                <span className="text-slate-400">Threat Score: {assessment.threatScore}%</span>
               </div>
               <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
                 <div
@@ -956,17 +831,17 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* Deep Dive (Collapsible for Judges) */}
+            {/* Collapsible Raw JSON for Judges */}
             {rawOutput && (
               <div className="pt-2 border-t border-slate-700/60">
                 <button
                   type="button"
                   onClick={() => setShowRaw(!showRaw)}
-                  className="w-full flex items-center justify-between text-xs text-slate-400 hover:text-slate-200 py-1.5 transition-colors font-mono"
+                  className="w-full flex items-center justify-between text-xs text-slate-400 hover:text-slate-200 py-1.5 transition-colors font-mono cursor-pointer"
                 >
                   <span className="flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                    Inspect Gemma 4 Raw Inferences & Payload (Judges Proof)
+                    Inspect Gemma 4 Raw JSON Payload (Judges Proof)
                   </span>
                   {showRaw ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
@@ -979,141 +854,10 @@ export default function Home() {
             )}
           </section>
         )}
-
-        {/* 4. EXTRAORDINARY DEFENSE SUITE (Bottom Architectural Proof) */}
-        <div className="pt-6 border-t border-slate-800/80 space-y-6">
-          {/* Section Header */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-emerald-400" />
-                <span>National Threat Intelligence & Architecture Proof</span>
-              </h3>
-              <p className="text-xs text-slate-400">
-                How Scam Shield maps Pakistani fraud vectors and defends citizens across voice, links, and SMS.
-              </p>
-            </div>
-
-            {/* Benchmark Accuracy Badge (Clickable for Defence Proof) */}
-            <button
-              type="button"
-              onClick={() => setShowBenchmarkModal(!showBenchmarkModal)}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold transition-all cursor-pointer shadow-sm"
-            >
-              <Award className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Benchmark: 10/10 Passed (100% Rate)</span>
-            </button>
-          </div>
-
-          {/* Benchmark Evaluation Modal/Drawer */}
-          {showBenchmarkModal && (
-            <div className="p-4 rounded-2xl bg-slate-900 border border-emerald-500/40 space-y-3 text-xs animate-in fade-in duration-200">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <span className="font-bold text-emerald-400 font-mono">
-                  10-Case Pakistani Real-World Evaluation Benchmark (npm run test:scams):
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowBenchmarkModal(false)}
-                  className="text-slate-400 hover:text-white"
-                >
-                  ✕ Close
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-[11px]">
-                {benchmarkCases.map((bc, idx) => (
-                  <div key={idx} className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between">
-                    <div>
-                      <span className="font-semibold text-slate-200 block truncate max-w-[220px]">{bc.name}</span>
-                      <span className="text-slate-500 text-[10px]">Expected: {bc.expected}</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">
-                      {bc.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 3 Attack Vectors vs Gemma 4 Defense Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
-            {/* Vector 1 */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/90 space-y-2 hover:border-slate-700 transition-all">
-              <div className="flex items-center gap-2 text-rose-400 font-bold">
-                <ShieldAlert className="w-4 h-4 shrink-0" />
-                <span>Accidental Reversal Fraud</span>
-              </div>
-              <p className="text-slate-300 text-[11px] leading-relaxed">
-                <strong>Scammer Vector:</strong> Sends fake SMS claiming accidental transfer of Rs. 20k-50k with threats of police or emotional blackmail.
-              </p>
-              <div className="pt-1.5 border-t border-slate-800/60 text-slate-400 text-[11px]">
-                <strong className="text-emerald-400">Gemma 4 Shield:</strong> Detects emotional coercion and urgent refund pressure patterns.
-              </div>
-            </div>
-
-            {/* Vector 2 */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/90 space-y-2 hover:border-slate-700 transition-all">
-              <div className="flex items-center gap-2 text-amber-400 font-bold">
-                <LinkIcon className="w-4 h-4 shrink-0" />
-                <span>Lookalike Phishing Domains</span>
-              </div>
-              <p className="text-slate-300 text-[11px] leading-relaxed">
-                <strong>Scammer Vector:</strong> Registers cheap <code className="text-slate-200">.xyz</code> lookalikes (`easypaisa-bonus.xyz`) mimicking bank logins.
-              </p>
-              <div className="pt-1.5 border-t border-slate-800/60 text-slate-400 text-[11px]">
-                <strong className="text-emerald-400">Pre-Click Shield:</strong> Deterministic domain entropy and brand typosquatting inspection.
-              </div>
-            </div>
-
-            {/* Vector 3 */}
-            <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/90 space-y-2 hover:border-slate-700 transition-all">
-              <div className="flex items-center gap-2 text-sky-400 font-bold">
-                <PhoneCall className="w-4 h-4 shrink-0" />
-                <span>Voice Call Social Engineering</span>
-              </div>
-              <p className="text-slate-300 text-[11px] leading-relaxed">
-                <strong>Scammer Vector:</strong> Calls on WhatsApp pretending to be a bank manager urgently requesting a 4-digit OTP.
-              </p>
-              <div className="pt-1.5 border-t border-slate-800/60 text-slate-400 text-[11px]">
-                <strong className="text-emerald-400">Audio Voice Shield:</strong> Browser mic transcription analyzed live by Gemma 4 for credential theft.
-              </div>
-            </div>
-          </div>
-
-          {/* National Emergency Helplines Bar (Direct Practical Value) */}
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-                <PhoneCall className="w-4 h-4" />
-              </div>
-              <div>
-                <span className="font-bold text-slate-200 block">Pakistan Cybercrime & Fraud Emergency Helplines:</span>
-                <span className="text-slate-400 text-[11px]">Immediate direct lines to report financial fraud and block stolen accounts.</span>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 font-mono text-[11px]">
-              <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300">
-                FIA Cybercrime: <strong className="text-emerald-400">1991</strong>
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300">
-                Easypaisa: <strong className="text-emerald-400">3737</strong>
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300">
-                JazzCash: <strong className="text-emerald-400">4444</strong>
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300">
-                PTA Fraud Cell: <strong className="text-emerald-400">0800-55055</strong>
-              </span>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* 5. Footer */}
-      <footer className="mt-14 text-center text-xs text-slate-500 max-w-xl px-4 space-y-1 font-mono">
+      {/* Clean Footer */}
+      <footer className="mt-12 text-center text-xs text-slate-500 max-w-xl px-4 space-y-1 font-mono">
         <p className={lang === 'urdu' ? 'font-serif' : ''}>{t.disclaimer}</p>
         <p className="text-[11px] text-slate-600">
           Scam Shield Pakistan • Google Gemma 4 (26B-A4B-IT) • Apache 2.0 • MIT Open Source
