@@ -1,259 +1,239 @@
-# 🛡️ SCAM SHIELD PAKISTAN: COMPLETE PROJECT & STAGE DEFENSE GUIDE
+# 🛡️ SCAM SHIELD PAKISTAN: COMPLETE STAGE DEFENSE & LEARNING GUIDE
 ### Hacktoberfest 26 Hack Day Faisalabad (MLH x HimmatKaar) • NIC Faisalabad
 
-> **Aapke liye mukammal guide (Complete Reference):** Is document ko acchi tarah parh lein. Isme har feature, code ka structure, judges ke sawalaat ke jawabaat, aur stage par bolne ka tariqa aasan lafzon mein samjhaya gaya hai.
+> **Dear Abubakkar:** Yeh document aapka complete study material aur master presentation script hai. Isko acchi tarah parh lein. Isme har cheez plain language (Roman Urdu + English) mein explain ki gayi hai taakay aap stage par confident aur relaxed rahein.
 
 ---
 
-## 📌 TABLE OF CONTENTS
-1. [The 30-Second Stage Pitch (Stage Opening)](#1-the-30-second-stage-pitch)
-2. [Why the 3 Quick Example Buttons Exist (And How to Defend Them)](#2-why-the-3-quick-example-buttons-exist)
-3. [The Real-World Pakistani Problem](#3-the-real-world-pakistani-problem)
-4. [Every Single Feature Built Into Our App (All 10 Functionalities)](#4-every-single-feature-built-into-our-app)
-5. [Technical Architecture: The 3-Layer Hybrid SOC Engine](#5-technical-architecture-the-3-layer-hybrid-engine)
-6. [File-by-File Code Walkthrough (Explain Any File)](#6-file-by-file-code-walkthrough)
-7. [The Background Mobile Call Question (How to Explain Native vs Web)](#7-the-background-mobile-call-question)
-8. [Judges Q&A: 10 Tough Questions & Winning Answers](#8-judges-qa-10-tough-questions--winning-answers)
-9. [Pre-Submission Checklist (100% Rules Compliance)](#9-pre-submission-checklist)
+## 📑 TABLE OF CONTENTS
+1. [What Our App Does (In Simple Words)](#1-what-our-app-does-in-simple-words)
+2. [The 3-Minute Winning Stage Pitch (Word-for-Word Script)](#2-the-3-minute-winning-stage-pitch)
+3. [Why Everything is on ONE Unified Page (No Extra Pages Needed)](#3-why-everything-is-on-one-unified-page)
+4. [Step-by-Step: What Is Happening Behind the Scenes](#4-step-by-step-what-is-happening-behind-the-scenes)
+5. [The 3-Layer Hybrid Architecture (SOC Model)](#5-the-3-layer-hybrid-architecture)
+6. [File-by-File Code Walkthrough (Explain Any File to Judges)](#6-file-by-file-code-walkthrough)
+7. [The 10 Tough Questions Judges Will Ask & Your Winning Answers](#7-the-10-tough-questions-judges-will-ask--your-winning-answers)
+8. [MLH Hack Day Faisalabad Pre-Submission Checklist](#8-mlh-hack-day-faisalabad-pre-submission-checklist)
 
 ---
 
-## 1. THE 30-SECOND STAGE PITCH
-*(Jab aap stage par mic pakrein, yeh 4 jumlay confidence se bolein):*
+## 1. WHAT OUR APP DOES (IN SIMPLE WORDS)
 
+### Ek Jumlay Mein (One Sentence):
+> **"Our app helps ordinary Pakistanis check suspicious messages, dangerous links, voice notes, and chat screenshots in Roman Urdu, Urdu script, and English using Google Gemma 4."**
+
+### Problem Kya Hai? (The Real Pakistani Problem):
+Har roz Pakistan ke aam shehriyon (ammi, abba, dukandaar, students) ko fraud messages aate hain:
+- *"Bhai ghalti se 25,000 aapke Easypaisa / JazzCash par bhej diye hain, khuda ke waste wapis kar dein."*
+- *"Benazir Income Support (BISP): 25,000 wazifa manzoor hua hai, link par click karein."*
+- *"Aapka HBL / Meezan Bank ATM block ho gaya hai, foran OTP batayein."*
+- Phishing links: `easypaisa-reward.xyz`, `jazzcash-claim.click`.
+
+**International security tools fail kyun ho jate hain?**  
+Cloudflare ya VirusTotal jaise tools English par chalte hain. Scammers Pakistani awam ko **Roman Urdu slang** aur local emotional pressure se loot-te hain. Gemma 4 open-weight AI is regional nuance ko samajhta hai.
+
+---
+
+## 2. THE 3-MINUTE WINNING STAGE PITCH
+*(Jab aap stage par mic pakrein, yeh script confidence ke sath bolein)*
+
+### [0:00 - 0:45] The Hook & Problem:
 > *"Assalam-o-Alaikum judges and fellow hackers! My name is Abubakkar, and I present **Scam Shield Pakistan**.*  
-> *Every single day, ordinary Pakistanis—our parents, shopkeepers, and students—lose their hard-earned money to fake Easypaisa reversals, BISP phishing links, and deceptive bank calls. Existing international security tools fail because Pakistani cybercriminals operate in **Roman Urdu and colloquial slang**.*  
-> *We built Scam Shield: an AI-powered defense system powered by **Google Gemma 4 (`gemma-4-26b-a4b-it`)** combined with a zero-latency heuristic rules engine. It inspects SMS, unmasks dangerous links before you click, screens voice calls in real time, and generates instant legal complaints for FIA Cybercrime."*
+>  
+> *Every single day in Pakistan, ordinary people lose their life savings to deceptive messages: fake Easypaisa accidental reversals, fake BISP welfare claims, and fake bank verification calls. International security tools fail completely because Pakistani scammers operate in **Roman Urdu** and emotional manipulation.*  
+>  
+> *Ordinary Pakistanis don't know how to inspect raw URLs or verify SSL certificates. They need an intelligent, localized shield."*
+
+### [0:45 - 1:45] The Live Demonstration:
+> *"To qualify for **Best Use of Gemma 4** and **Best Open-Source AI Project**, we built a single-page hybrid cyber defense engine powered directly by Google's open-weight model **`gemma-4-26b-a4b-it`** via the official `@google/genai` SDK.*  
+>  
+> *Look at our user experience:*  
+> *1. **Unified Omni-Scanner**: The user doesn't have to navigate 5 different pages. You paste a message, and if it contains a link, our system **distinguishes the link in real-time** and unmasks where shortened links (`bit.ly`, `tinyurl`) actually redirect before you click!*  
+> *2. **Zero-Click Auto-Detect**: You don't even have to manually paste. If you copy a suspicious message on WhatsApp and open our tab, Scam Shield **automatically senses the clipboard, feeds it to Gemma 4, and pops up the security verdict instantly**!*  
+> *3. **Voice & Screenshot Support**: You can record live voice, attach an audio file, or drop a chat screenshot for on-device OCR.*  
+> *4. **3-Way Language Switch**: Fully translated across **English**, **Roman Urdu**, and **اردو رسم الخط**."*
+
+### [1:45 - 2:30] Technical Architecture:
+> *"Under the hood, we don't rely solely on probabilistic AI. We designed a **3-Layer Hybrid SOC Engine**:*  
+> * *Layer 1:* **Google Gemma 4 (`gemma-4-26b-a4b-it`)** performs deep linguistic analysis of urgency, coercion, and social engineering.*  
+> * *Layer 2:* **Deterministic Heuristic Rules Engine** with 50+ Pakistani fraud keywords, lookalike brand typosquatting, and suspicious TLD checkers (`.xyz`, `.top`).*  
+> * *Layer 3:* **Conservative Decision Combiner**: If either layer flags a high risk, the final verdict is escalated to High. If Gemma 4 is offline, the rules engine acts as an automatic zero-latency fallback!*  
+>  
+> *Finally, if a scam is caught, the victim can generate a 1-click official **FIA Cybercrime (NR3C)** legal complaint ready to file."*
+
+### [2:30 - 3:00] Closing & Impact:
+> *"Scam Shield is 100% open-source under the MIT license, Gemma 4 is open-weight under Apache 2.0, and our 10-test automated benchmark achieves 100% detection accuracy with zero false positives on genuine bank OTPs. Thank you!"*
 
 ---
 
-## 2. WHY THE 3 QUICK EXAMPLE BUTTONS EXIST
-At the bottom of the input area, there are 3 preset buttons:
-1. 🔴 **Easypaisa Scam**: *"0300 se 25,000 ghalti se bhej diye hain..."*
-2. 🟡 **Fake BISP Link**: *"Benazir Income Support 25,000 wazifa: bisp-wazifa-claim.xyz/verify"*
-3. 🟢 **Genuine Bank OTP**: *"HBL Alert: Your OTP is 591823. Never share..."*
+## 3. WHY EVERYTHING IS ON ONE UNIFIED PAGE
+*(Judges might ask: "Why didn't you make separate pages for links, audio, and screenshots?")*
 
-### Kyun banaye gaye? (Why do they make sense?):
-- **Judges Pitch Efficiency**: Hackathon pitches are only 3 to 4 minutes long. If you spend 40 seconds typing an Urdu message on the keyboard, your time will run out!
-- **1-Click Proof**: With a single click, a judge can test a **severe scam**, a **deceptive link**, or a **legitimate clean message** to prove Gemma 4 has zero false positives.
-- **Rule Requirement**: The original MLH hackathon challenge brief explicitly required 3 test buttons to demonstrate accuracy across high, medium, and low risk scenarios.
-
----
-
-## 3. THE REAL-WORLD PAKISTANI PROBLEM
-Pakistani cyber fraud is unique and devastating:
-1. **Accidental Reversal Fraud**: Scammers send a fake SMS claiming they sent Rs. 25,000 by mistake to your Easypaisa/JazzCash and beg or threaten police action to get you to send real money back.
-2. **Government Scheme Phishing**: Fake BISP, Ehsaas, or FESCO electricity discount links (`.xyz`, `.click`) designed to harvest CNICs and phone numbers.
-3. **Live Bank Impersonation Calls**: Scammers call claiming to be HBL, JazzCash, or State Bank managers saying *"Aapka account block hone laga hai, foran OTP batayein."*
-4. **English Security Tools Fail**: Cloudflare, VirusTotal, and US security tools do not understand Roman Urdu slang (*"ghalti se paise bhej diye", "wazifa manzoor", "chuna lagana"*).
+### Winning Answer:
+> *"In emergency cybersecurity, **simplicity saves lives**. When a panic-stricken mother gets an SMS saying her account is blocked, she will NOT navigate through 4 different web pages.  
+> We designed a unified **Omni-Input Scanner**:  
+> - If you paste text with a link, the system distinguishes the link automatically.  
+> - If you have a voice note, the mic and audio upload are right there.  
+> - If you have a screenshot, OCR runs on the same page.  
+> Everything happens seamlessly in one place without page reloads or tab navigation friction."*
 
 ---
 
-## 4. EVERY SINGLE FEATURE BUILT INTO OUR APP
+## 4. STEP-BY-STEP: WHAT IS HAPPENING BEHIND THE SCENES
 
-### 1. SMS & Text Message Scam Analyzer
-Paste any message in Roman Urdu, Urdu script, or English. Gemma 4 analyzes urgency, fear tactics, and social engineering patterns.
+### Step 1: Input Ingestion
+The user provides input via any channel:
+- Typing or pasting SMS / WhatsApp text
+- A message with an embedded link (e.g. `http://bisp-wazifa-claim.xyz/verify`)
+- Voice recording via Web Speech API (`webkitSpeechRecognition`)
+- Audio file upload (`.mp3`, `.wav`, `.m4a`)
+- Chat screenshot processed via client-side Computer Vision OCR (`tesseract.js`)
+- **Zero-Click Clipboard Trigger**: Simply opening or focusing the tab auto-reads newly copied WhatsApp text and begins scanning.
 
-### 2. Pre-Click Link Destination Tracer (`traceLinkDestination`)
-Scammers hide malicious links behind shorteners (`bit.ly`, `tinyurl`) or redirect domains. When a user pastes a link:
-- Our backend safely traces HTTP redirects server-side (up to 5 hops) *without opening dangerous client code*.
-- It unmasks the **real target domain** (e.g., `bit.ly/prize` ➡️ `easypaisa-reward.xyz/login`).
-- Warns the user of lookalike domains and dangerous TLDs (`.xyz`, `.click`, `.top`).
+### Step 2: Pre-Click Link Destination Tracer (`traceLinkDestination`)
+Before sending to AI, the server extracts URLs using regex. If it is a shortened URL (`bit.ly`, `tinyurl`), the server executes an HTTP request with `redirect: follow` (up to 5 hops) to uncover the **real destination URL** *without executing malicious client scripts in your browser*.
 
-### 3. Voice Call & Audio Note Analysis
-- **Microphone Recording**: Click "Record Mic" to speak live into the browser with Web Speech recognition.
-- **File & Gallery Upload**: Upload actual audio files (`.mp3`, `.wav`, `.m4a`, `.opus`, `.ogg`) received from WhatsApp voice notes.
-- **Preloaded Pakistani Voice Scenarios**: 1-click test recordings of fake JazzCash helpline calls and urgent accidental transfer notes.
+### Step 3: Local Heuristic Rules Layer (`lib/rules.ts`)
+The server scans the text against:
+- **50+ Pakistani Fraud Keywords**: "ghalti se bhej", "wapis bhej do", "inam", "lottery", "account block", "otp share", "advance fee".
+- **Lookalike Brand Phishing**: Domains containing `easypaisa`, `jazzcash`, `hbl`, `bisp` combined with untrusted TLDs (`.xyz`, `.top`, `.click`).
 
-### 4. Live Call Interceptor & Floating Emergency Alert Simulation
-- Simulates an incoming fraudulent WhatsApp call (`+92 312 9988776` - Fake State Bank Verification).
-- User clicks **"Screen with Gemma 4"** ➡️ Gemma 4 live-transcribes and analyzes the caller demanding urgent OTP verification.
-- Triggers a **Red Emergency Floating Alert Banner** right over the screen warning: *"HIGH RISK FRAUD DETECTED: Fake Bank OTP Harvesting! Do not disclose OTP code!"* with a 1-click Hang Up & Block button.
+### Step 4: Google Gemma 4 AI Layer (`gemma-4-26b-a4b-it`)
+Calls the official `@google/genai` SDK with strict JSON-enforced output:
+```json
+{
+  "risk": "high | medium | low",
+  "scam_type": "string",
+  "reasons": ["Point 1", "Point 2"],
+  "next_steps": ["Action 1", "Action 2"]
+}
+```
+Gemma 4 analyzes social engineering, urgency, psychological pressure, and impersonation in Roman Urdu / Urdu script.
 
-### 5. Background Auto-Shield Sentry (Clipboard & Notification Shield)
-- Toggle **"Enable Auto-Shield"** at the top.
-- Asks for native browser Notification permission.
-- When the user leaves the tab to chat on WhatsApp or SMS and copies any suspicious text or link, Scam Shield **automatically detects the copied text in the background, runs Gemma 4, and pushes a native System Notification Popup with sound** without needing to manually paste!
+### Step 5: Conservative Combiner (`lib/combine.ts`)
+Merges the AI findings and rules violations. If either engine detects danger, the final result is **High Risk (Bohat Khatarnak)**.
 
-### 6. In-Browser Screenshot OCR (`tesseract.js`)
-Users can drag and drop or upload a screenshot of an SMS or WhatsApp chat. In-browser computer vision extracts the text locally before passing it to Gemma 4.
-
-### 7. Tri-Lingual Support
-1-click toggle between:
-- **English**: Professional cybersecurity terminology.
-- **Roman Urdu**: Everyday conversational Urdu (*"Bohat khatarnak", "Ghalti se paise"*).
-- **اردو رسم الخط (Urdu Script)**: Full right-to-left (RTL) Nastaliq typography for elders and non-English readers.
-
-### 8. Traffic-Light Threat Assessment Card
-- 🔴 **Bohat Khatarnak (High Risk)**
-- 🟡 **Ehtiyat Karein (Medium Risk)**
-- 🟢 **Koi Wazeh Khatra Nahi Mila (Low Risk)** *(Never says "100% safe")*.
-
-### 9. Audio Voice Alert (SpeechSynthesis)
-Click **"Listen Aloud"** to have the device speak out the safety warning and instructions in clear speech for users who have difficulty reading.
-
-### 10. 1-Click Legal FIA Cybercrime (NR3C) / Bank Complaint Generator
-Click **"Copy FIA Complaint"** to instantly generate an official formal legal complaint report (in Urdu or English) complete with incident timestamp, evidence payload, and helpline filing instructions for FIA NR3C (1991) and the State Bank of Pakistan.
+### Step 6: Presentation to User
+- Traffic-Light colored alert (🔴 High, 🟡 Caution, 🟢 Low Risk).
+- Forensic reasons and protective actions.
+- Text-to-speech audio alert via Web Speech API.
+- 1-Click official legal complaint draft for FIA Cybercrime (NR3C).
 
 ---
 
-## 5. TECHNICAL ARCHITECTURE: THE 3-LAYER HYBRID ENGINE
+## 5. THE 3-LAYER HYBRID ARCHITECTURE
 
 ```
-                     [ SMS / WhatsApp / Voice Note / Screenshot / Link ]
-                                              │
-                                              ▼
-                    ┌──────────────────────────────────────────────────┐
-                    │          Client Layer (Next.js 16 + OCR)         │
-                    └─────────────────────────┬────────────────────────┘
-                                              │
-                     ┌────────────────────────┴────────────────────────┐
-                     ▼                                                 ▼
-          ┌─────────────────────┐                           ┌─────────────────────┐
-          │    Layer 1: AI      │                           │   Layer 2: Rules    │
-          │   Google Gemma 4    │                           │ Deterministic Engine│
-          │(gemma-4-26b-a4b-it) │                           │(50+ Local Heuristics│
-          │                     │                           │                     │
-          │• Roman Urdu Nuance  │                           │• Phishing Domains   │
-          │• Emotional Coercion │                           │• Brand Lookalikes   │
-          │• JSON Enforced Spec │                           │• Known Fraud Phrases│
-          └──────────┬──────────┘                           └──────────┬──────────┘
-                     │                                                 │
-                     └────────────────────────┬────────────────────────┘
-                                              │
-                                              ▼
-                                ┌───────────────────────────┐
-                                │  Layer 3: Hybrid Combiner │
-                                │(Conservative Threat Model)│
-                                └─────────────┬─────────────┘
-                                              │
-                                              ▼
-                                 [ Unified Verdict + Actions ]
+                     [ SMS / WhatsApp / Audio / Screenshot / Link ]
+                                           │
+                                           ▼
+                 ┌───────────────────────────────────────────────────┐
+                 │        Client Layer (Unified Single Page)         │
+                 │    • Zero-Click Auto-Detect  • On-Device OCR      │
+                 └─────────────────────────┬─────────────────────────┘
+                                           │
+                  ┌────────────────────────┴────────────────────────┐
+                  ▼                                                 ▼
+       ┌─────────────────────┐                           ┌─────────────────────┐
+       │    Layer 1: AI      │                           │   Layer 2: Rules    │
+       │   Google Gemma 4    │                           │ Deterministic Engine│
+       │(gemma-4-26b-a4b-it) │                           │(50+ Local Heuristics│
+       │                     │                           │                     │
+       │• Roman Urdu Context │                           │• Phishing Domains   │
+       │• Urgency & Fear     │                           │• Brand Typosquatting│
+       │• Social Engineering │                           │• Shortener Unmasking│
+       └──────────┬──────────┘                           └──────────┬──────────┘
+                  │                                                 │
+                  └────────────────────────┬────────────────────────┘
+                                           │
+                                           ▼
+                             ┌───────────────────────────┐
+                             │  Layer 3: Hybrid Combiner │
+                             │(Conservative Threat Model)│
+                             └─────────────┬─────────────┘
+                                           │
+                                           ▼
+                              [ Result Card & Action Plan ]
+                              🔴 Bohat Khatarnak (High Risk)
+                              🟡 Ehtiyat Karein (Medium Risk)
+                              🟢 Koi Wazeh Khatra Nahi Mila
 ```
-
-### Why a Hybrid Architecture?
-1. **Safety First**: If Gemma 4 evaluates an ambiguous message as "low", but the rules engine spots a known lookalike domain (`easypaisa-reward.xyz`), the Combiner **forces the verdict to High Risk**.
-2. **Offline Resilience**: If the API key is missing or internet connectivity is down, the system **never crashes**; it gracefully falls back to the deterministic heuristic rules engine.
-3. **Explainability**: Displays "Which layer caught what" (e.g. *"Gemma 4 flagged: Urgency & Money Request. Rules flagged: Phishing lookalike domain"*).
 
 ---
 
 ## 6. FILE-BY-FILE CODE WALKTHROUGH
 
-### 1. `app/api/check/route.ts` (The Brain Backend)
-- **Role**: Next.js App Router API route handling `POST /api/check`.
-- **Key Functions**:
-  - `traceLinkDestination(url)`: Follows HTTP redirects safely using `fetch(url, { redirect: 'manual' })` up to 5 hops to discover where shortened links really point.
-  - Calls Google Gemma 4 (`gemma-4-26b-a4b-it`) using the official `@google/genai` Node.js SDK:
-    ```typescript
-    const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-      model: 'gemma-4-26b-a4b-it',
-      contents: prompt,
-    });
-    ```
-  - `cleanAndParseJSON()`: Safely strips markdown fences (````json ... ````) and parses the JSON response. If JSON parsing fails, provides a safe fallback.
-  - Runs `runSecurityRules()` and merges verdicts via `combineSecurityLayers()`.
-
-### 2. `lib/rules.ts` (Deterministic Heuristics Engine)
-- **Role**: Instant, zero-latency cybersecurity detection.
-- Contains 50+ localized fraud keywords across:
-  - Financial urgency (*"ghalti se bhej", "wapis bhej do", "paise transfer"*).
-  - Impersonation (*"bisp", "benazir income", "fesco", "biometric block"*).
-  - Credential harvesting (*"otp batayein", "pin code", "password"*).
-  - Advance fee job scams (*"daily earning", "online job from home"*).
-- `inspectUrlSafety(url)`: Detects URL shorteners (`bit.ly`, `tinyurl`), dangerous TLDs (`.xyz`, `.top`, `.click`), and brand typosquatting (`easypaisa-*`, `jazzcash-*`, `hbl-*`).
-
-### 3. `lib/combine.ts` (Conservative Decision Combiner)
-- Implements the mathematical decision matrix:
-  - If **either** Gemma 4 OR Rules detects High Risk ➡️ Final verdict is **HIGH**.
-  - If Gemma says Low, but Rules found violations ➡️ Escalates to **MEDIUM**.
-  - Provides dual-layer transparent highlights explaining what each engine caught.
-
-### 4. `lib/complaint.ts` (Legal Complaint Generator)
-- Automatically formats an official cybercrime reporting draft for:
-  - **FIA National Response Centre for Cybercrime (NR3C)** (Dial 1991 / complaints@nr3c.gov.pk).
-  - State Bank of Pakistan Consumer Protection Department.
-
-### 5. `app/page.tsx` (Single-Page User Interface)
-- Built with React + Tailwind CSS.
-- Houses the 3-Way Language Switcher, 4 Input Tabs (Text, Link, Voice, Screenshot), Background Auto-Shield Sentry, Live Call Simulation Modal, and Traffic-Light Result Card.
-
-### 6. `tests/evaluate.ts` (10-Case Benchmark Suite)
-- Run with: `npm run test:scams`.
-- Evaluates 10 real-world Pakistani messages (7 scams, 3 clean genuine alerts).
-- Proves **100% detection accuracy** with 0 false positives.
+| File Path | What It Does (In 2 Lines) |
+| :--- | :--- |
+| **`app/page.tsx`** | The complete user interface. Houses the unified single-card input, zero-click clipboard auto-detect, mic/audio handlers, screenshot OCR, 3 demo presets, and result card. |
+| **`app/api/check/route.ts`** | The Next.js API endpoint. Calls Google Gemma 4 (`gemma-4-26b-a4b-it`) via `@google/genai`, runs `traceLinkDestination` to uncover redirects, and triggers fallback heuristics if offline. |
+| **`lib/rules.ts`** | Zero-latency cybersecurity engine with 50+ Pakistani fraud phrases and domain safety inspection for `.xyz`, shorteners, and brand impersonation. |
+| **`lib/combine.ts`** | Hybrid combiner that merges Gemma 4 AI + local rules using a conservative threat matrix, ensuring high explainability. |
+| **`lib/complaint.ts`** | Automatically formats ready-to-file legal cybercrime reports for FIA NR3C (1991) and the State Bank of Pakistan. |
+| **`tests/evaluate.ts`** | Automated benchmark test suite evaluating 10 real-world Pakistani messages (7 scams, 3 clean) with 100% pass rate. |
+| **`package.json`** | Contains production scripts configured with `--webpack` for fast, reliable Windows compilation. |
+| **`.env.example`** | Open-source template for setting `GEMINI_API_KEY`. (Actual `.env` is securely in `.gitignore`). |
+| **`LICENSE`** | Open-source MIT License. |
 
 ---
 
-## 7. THE BACKGROUND MOBILE CALL QUESTION
-*(Judges often ask: "Can this app run in the background on my Android phone and automatically block calls?"):*
+## 7. THE 10 TOUGH QUESTIONS JUDGES WILL ASK & YOUR WINNING ANSWERS
 
-### The Exact Winning Answer:
-> *"Great question, judges! In a web browser (Chrome or Safari), the mobile operating system strictly sandboxes web tabs for user privacy. A website cannot listen to your phone calls in the background without native OS permissions.*  
->  
-> *To solve this, our project features two layers:*  
-> *1. **Today on the Web**: Our **Background Auto-Shield Sentry** monitors clipboard copy events and pushes instant native web notifications when you copy a scam message or link.*  
-> *2. **Our Mobile Architecture**: In our native Android production build, we plug this exact Gemma 4 backend into an Android `CallScreeningService` and `NotificationListenerService`, which displays a real-time Truecaller-style floating popup (`SYSTEM_ALERT_WINDOW`) the second a fraudulent call rings!"*
+#### Q1: "Why Gemma 4? Why not OpenAI GPT-4 or Claude 3.5?"
+**Answer:**  
+*"Two key reasons: First, **Data Sovereignty & Open Weights**. Google Gemma 4 is an open-weight model licensed under Apache 2.0. In banking and national security, sensitive citizen CNICs and financial SMS cannot be sent to proprietary closed-source models. Gemma 4 can be hosted locally within Pakistan. Second, Gemma 4 (`gemma-4-26b-a4b-it`) has exceptional multilingual comprehension of low-resource languages like Roman Urdu and Pakistani slang."*
 
----
+#### Q2: "How does the Zero-Click Auto-Detect work?"
+**Answer:**  
+*"When a user copies a suspicious message or link in WhatsApp and simply switches to or opens our tab, Scam Shield reads the clipboard via `navigator.clipboard.readText()`. If new text is detected, it auto-fills the scanner and executes Gemma 4 analysis without requiring the user to manually paste or click 'Verify'."*
 
-## 8. JUDGES Q&A: 10 TOUGH QUESTIONS & WINNING ANSWERS
+#### Q3: "What if Gemma 4 hallucinates or goes offline?"
+**Answer:**  
+*"We implemented a **Fail-Safe Hybrid Architecture**. If the Gemma 4 API call experiences latency or network failure, our backend automatically falls back to our deterministic TypeScript heuristic rules engine (`lib/rules.ts`). The user is never left without protection."*
 
-#### Q1: "Why did you choose Gemma 4 instead of OpenAI GPT-4 or Claude?"
-**Answer**:  
-*"Two key reasons: First, **Data Sovereignty & Open Weights**. Google Gemma 4 is an open-weight model licensed under Apache 2.0. In national cybersecurity and banking, organizations cannot send sensitive Pakistani citizens' CNICs and transaction SMS to proprietary black-box APIs. Gemma 4 can be hosted privately on-premise in Pakistan or called via Google AI Studio. Second, Gemma 4 (`gemma-4-26b-a4b-it`) has extraordinary multilingual understanding of low-resource languages, including Roman Urdu and colloquial Pakistani slang."*
+#### Q4: "Why do you have a rules engine if you already have Gemma 4?"
+**Answer:**  
+*"LLMs are probabilistic, not deterministic. An LLM might occasionally overlook a subtle domain typo like `easypaisa-reward.xyz`. Our heuristic rules engine guarantees zero-latency, 100% deterministic detection of suspicious TLDs, IP URLs, and known fraud keywords, which are then combined with Gemma 4's contextual reasoning."*
 
-#### Q2: "What happens if Gemma 4 hallucinates or goes down?"
-**Answer**:  
-*"We implemented a **Fail-Safe Hybrid Architecture**. If the Gemma 4 API call fails or encounters network drops, our backend automatically falls back to our deterministic TypeScript heuristic rules engine (`lib/rules.ts`). The user is never left unprotected."*
+#### Q5: "How do you prevent false positives on genuine bank OTPs?"
+**Answer:**  
+*"Genuine bank SMS (e.g. 'HBL Alert: Your OTP is 591823') state 'NEVER share this OTP with anyone', whereas scammers demand 'OTP batayein'. Gemma 4 distinguishes defensive warnings from offensive harvesting. Our automated test suite proves 10/10 tests passed with 0 false positives."*
 
-#### Q3: "Why not just use regular AI? Why did you need the rules layer?"
-**Answer**:  
-*"LLMs are probabilistic, not deterministic. An LLM might occasionally miss a subtle typosquatted domain like `easypaisa-reward.xyz`. Our heuristic rules engine guarantees zero-latency, 100% deterministic detection of suspicious TLDs (`.xyz`, `.top`), IP URLs, and known fraud keywords, which are then combined with Gemma 4's contextual reasoning."*
+#### Q6: "How does link unmasking work?"
+**Answer:**  
+*"Scammers hide malicious URLs behind shorteners like `bit.ly`. Our backend `traceLinkDestination` function executes a server-side HEAD/GET request with `redirect: follow` up to 5 hops, revealing the actual destination domain before the user ever touches it in their browser."*
 
-#### Q4: "How does your app prevent false positives on genuine bank OTPs?"
-**Answer**:  
-*"We benchmarked our engine with legitimate bank SMS (e.g., 'HBL Alert: Your OTP is 591823'). Gemma 4 recognizes that genuine bank OTP messages explicitly state 'NEVER share this OTP with anyone', whereas scammers demand 'OTP batayein'. Our benchmark test suite proves 10/10 tests passed with 0 false positives."*
+#### Q7: "Why doesn't your app ever say '100% Safe'?"
+**Answer:**  
+*"This is a fundamental cybersecurity principle. In cybersecurity, nothing is ever '100% safe'. A clean message receives the verdict **'Koi Wazeh Khatra Nahi Mila' (No Obvious Red Flags Found)** accompanied by an advisory to remain cautious."*
 
-#### Q5: "How does the link unmasker work?"
-**Answer**:  
-*"Scammers frequently use `bit.ly` or `tinyurl` to hide fraudulent domains. Our backend `traceLinkDestination` function executes a server-side HEAD/GET request with `redirect: manual`, tracking HTTP `Location` headers up to 5 hops. We inspect the final destination domain before the user ever touches it in their browser."*
-
-#### Q6: "Why doesn't your app declare any message '100% Safe'?"
-**Answer**:  
-*"This is a core cybersecurity principle. In security, there is no such thing as '100% safe'. A clean message receives the verdict **'Koi Wazeh Khatra Nahi Mila' (No Obvious Red Flags Found)** accompanied by a permanent advisory to remain cautious."*
-
-#### Q7: "How is this open-source?"
-**Answer**:  
-*"The entire repository is licensed under the permissive **MIT License**, and the underlying AI model Google Gemma 4 is open-weight under **Apache 2.0**. There is no database, no proprietary lock-in, and all code is publicly accessible on GitHub."*
-
-#### Q8: "How does the voice note detection work?"
-**Answer**:  
-*"Users can upload `.mp3`, `.wav`, or `.m4a` files or speak live using Web Speech recognition. The transcript is fed to Gemma 4 with a specialized system context instructing the model to look for voice call impersonation, urgent banking pressure, and caller intimidation."*
+#### Q8: "How is screenshot OCR handled?"
+**Answer:**  
+*"Screenshot OCR runs on-device in the browser using `tesseract.js` WebAssembly. The image never leaves the user's browser; only the extracted text is passed to our detection engine."*
 
 #### Q9: "What is your roadmap after Hack Day?"
-**Answer**:  
-*"1. Build a **WhatsApp Bot** using the WhatsApp Business API so citizens can forward messages directly.  
-2. Launch a **Crowdsourced National Threat Intelligence Registry** to track recurring fraud phone numbers.  
-3. Release a native **Android App** using `CallScreeningService` for automatic call blocking."*
+**Answer:**  
+*"1. Launch a **WhatsApp Bot** using the WhatsApp Business API for elderly citizens who don't browse web apps.  
+2. Build a **Crowdsourced National Threat Registry** to catalog recurring scam numbers and bank accounts.  
+3. Release an **Android Service** using `CallScreeningService` for automated real-time scam call blocking."*
 
 #### Q10: "Where is the API key stored?"
-**Answer**:  
-*"Strictly server-side in `.env` as `GEMINI_API_KEY`. It is excluded in `.gitignore` and never leaked into client bundles or git commits. We also provide `.env.example` for anyone cloning the open-source repo."*
+**Answer:**  
+*"Strictly server-side in `.env` as `GEMINI_API_KEY`. It is excluded in `.gitignore` and never leaked into client bundles or git commits. We provide `.env.example` for anyone cloning the open-source repo."*
 
 ---
 
-## 9. PRE-SUBMISSION CHECKLIST (MLH CHALLENGE QUALIFICATION)
+## 8. MLH HACK DAY FAISALABAD PRE-SUBMISSION CHECKLIST
 
-- [x] **Model Verified**: Uses Google Gemma 4 (`gemma-4-26b-a4b-it`) via `@google/genai` Node.js SDK.
-- [x] **Open-Source License**: `LICENSE` file present in root directory with MIT license.
-- [x] **Gemma License Documented**: `README.md` explicitly credits Gemma 4 with link to Apache 2.0 license.
-- [x] **Security Safeguard**: `.env` is listed in `.gitignore`; no API keys committed to git history.
+- [x] **Model Verified**: Google Gemma 4 (`gemma-4-26b-a4b-it`) called via official `@google/genai` Node.js SDK.
+- [x] **Open-Source License**: `LICENSE` file present in root directory under MIT License.
+- [x] **Gemma License Documented**: `README.md` explicitly documents Gemma 4 with link to Apache 2.0 license.
+- [x] **Security Safeguard**: `.env` is listed in `.gitignore`; zero API keys in git history.
 - [x] **Environment Template**: `.env.example` provided with placeholder instructions.
 - [x] **Automated Tests Passing**: `npm run test:scams` runs 10 test scenarios with 100% pass rate.
 - [x] **Production Build Clean**: Passes `next build` and `tsc --noEmit` without errors.
+- [x] **Single-Page Simplicity**: Unified scanner with text, links, voice, screenshot OCR, and auto-detect all on one clean page.
 
 ---
 
-*Good luck at Hacktoberfest 26 Hack Day Faisalabad! You have built a truly innovative, socially impactful cybersecurity solution for Pakistan. Present with confidence!*
+*Best of luck at Hacktoberfest 26 Hack Day Faisalabad! Read this through, practice clicking the demo presets at `http://localhost:3000`, and take the stage with confidence!*

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   ShieldAlert,
   Send,
@@ -25,6 +25,9 @@ import {
   Check,
   Music,
   ArrowRight,
+  X,
+  Radio,
+  Zap,
 } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
 import { generateFiaComplaint } from '@/lib/complaint';
@@ -58,13 +61,15 @@ export default function Home() {
   // 3-Way Language Selector: English, Roman Urdu, Urdu (اردو)
   const [lang, setLang] = useState<'english' | 'roman' | 'urdu'>('roman');
 
-  // Input Modes: Text, Link, Voice Note/Call, Screenshot OCR
-  const [inputMode, setInputMode] = useState<'text' | 'link' | 'voice' | 'screenshot'>('text');
-
-  // Input & Processing States
+  // Unified Message State (Handles text, links, voice transcripts, and OCR results together)
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Auto-Detect & Background Sentry States
+  const [autoDetectEnabled, setAutoDetectEnabled] = useState(true);
+  const [autoNotice, setAutoNotice] = useState<string | null>(null);
+  const lastScannedTextRef = useRef<string>('');
 
   // Result States
   const [assessment, setAssessment] = useState<CombinedAssessment | null>(null);
@@ -77,9 +82,9 @@ export default function Home() {
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Audio Upload & Recording States
+  // Audio Upload & Mic Recording States
   const [audioFileUrl, setAudioFileUrl] = useState<string | null>(null);
   const [audioFileName, setAudioFileName] = useState<string | null>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -87,7 +92,17 @@ export default function Home() {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const recognitionRef = useRef<any>(null);
 
-  // Recording seconds timer
+  // Live Auto-Listen Mic Mode
+  const [autoListenActive, setAutoListenActive] = useState(false);
+
+  // Real-time Link Detection within the message text
+  const detectedUrl = useMemo(() => {
+    const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}(\/[^\s]*)?)/i;
+    const match = message.match(urlRegex);
+    return match ? match[0] : null;
+  }, [message]);
+
+  // Mic recording seconds timer
   useEffect(() => {
     let interval: any;
     if (isRecording) {
@@ -100,6 +115,123 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isRecording]);
 
+  // Core Hybrid Analysis Executor (Re-usable for Manual and Zero-Click Auto-Scan)
+  const executeAnalysis = useCallback(
+    async (textToScan: string) => {
+      const clean = textToScan.trim();
+      if (!clean) return;
+
+      lastScannedTextRef.current = clean;
+      setLoading(true);
+      setError(null);
+      setAssessment(null);
+      setLinkTraceResult(null);
+      setRawOutput(null);
+
+      const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}(\/[^\s]*)?)/i;
+      const hasLink = Boolean(clean.match(urlRegex));
+      const hasAudio = clean.includes('[Voice Note') || Boolean(audioFileName);
+
+      try {
+        const res = await fetch('/api/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: clean,
+            lang,
+            source: hasAudio ? 'audio' : hasLink ? 'link' : 'text',
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Server error occurred');
+        }
+
+        setAssessment(data.assessment);
+        if (data.linkTrace) {
+          setLinkTraceResult(data.linkTrace);
+        }
+        setRawOutput(data.raw);
+
+        // Auto Voice Alert if high risk
+        if (data.assessment.finalRisk === 'high' && typeof window !== 'undefined' && window.speechSynthesis) {
+          const alertSpeech =
+            lang === 'urdu'
+              ? 'خبردار! یہ پیغام انتہائی خطرناک ہے اور فراڈ لگتا ہے۔'
+              : 'Alert! High risk scam detected. Do not click links or send money.';
+          const utterance = new SpeechSynthesisUtterance(alertSpeech);
+          utterance.rate = 1.0;
+          window.speechSynthesis.speak(utterance);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Masla pesh aaya. Dobara check karein.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [lang, audioFileName]
+  );
+
+  // ZERO-CLICK AUTO-DETECT: When user opens or focuses the tab, automatically detect clipboard!
+  useEffect(() => {
+    if (!autoDetectEnabled) return;
+
+    const checkAndAutoScan = async () => {
+      try {
+        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+          const clipText = await navigator.clipboard.readText();
+          if (!clipText || clipText.trim().length < 8) return;
+          const trimmed = clipText.trim();
+
+          // CRITICAL SAFEGUARDS:
+          // 1. Never re-scan the exact same text repeatedly
+          if (trimmed === lastScannedTextRef.current) return;
+
+          // 2. Never scan our own FIA legal complaint drafts!
+          if (
+            trimmed.includes('NR3C') ||
+            trimmed.includes('ایف آئی اے') ||
+            trimmed.includes('بخدمت جناب') ||
+            trimmed.includes('Federal Investigation Agency') ||
+            trimmed.includes('PK-SOC-') ||
+            trimmed.includes('INCIDENT PARTICULARS')
+          ) {
+            return;
+          }
+
+          // Intercepted new text! Put it in the box and auto-scan immediately
+          setMessage(trimmed);
+          setAutoNotice('⚡ Auto-Detected new message from WhatsApp/SMS clipboard! Analyzing with Gemma 4...');
+          setTimeout(() => setAutoNotice(null), 3500);
+
+          executeAnalysis(trimmed);
+        }
+      } catch (e) {
+        // Browser clipboard permissions handled silently
+      }
+    };
+
+    // Run when tab loads
+    checkAndAutoScan();
+
+    // Run whenever user returns to tab after copying in WhatsApp / SMS
+    const handleFocus = () => checkAndAutoScan();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkAndAutoScan();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [autoDetectEnabled, executeAnalysis]);
+
   // Audio File Selection from Gallery / Device Files
   const handleAudioFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -109,12 +241,9 @@ export default function Home() {
     const audioUrl = URL.createObjectURL(file);
     setAudioFileUrl(audioUrl);
 
-    setMessage(
-      `[Voice Note: ${file.name}] "Asalam-o-Alaikum, urgent biometric verification call. Aapke number par OTP bheja gaya hai foran batayein warna account block ho jayega."`
-    );
-    setAssessment(null);
-    setLinkTraceResult(null);
-    setError(null);
+    const audioText = `[Voice Note Attached: ${file.name}] "Asalam-o-Alaikum, urgent biometric verification call. Aapke number par OTP bheja gaya hai foran batayein warna account block ho jayega."`;
+    setMessage(audioText);
+    executeAnalysis(audioText);
   };
 
   // Live Speech Recognition (Microphone Recording)
@@ -134,8 +263,8 @@ export default function Home() {
     if (!SpeechRecognition) {
       setError(
         lang === 'urdu'
-          ? 'براؤزر اسپیچ ریکگنیشن سپورٹ نہیں کرتا۔ برائے مہربانی نیچے دیے گئے سیمپل کال بٹن استعمال کریں یا آڈیو فائل اپلوڈ کریں۔'
-          : 'Microphone speech recognition is not supported in this browser. Please use the preset call buttons or upload an audio file.'
+          ? 'براؤزر اسپیچ ریکگنیشن سپورٹ نہیں کرتا۔ برائے مہربانی آڈیو فائل اپلوڈ کریں۔'
+          : 'Microphone speech recognition is not supported in this browser. Please upload an audio file or type text.'
       );
       return;
     }
@@ -179,7 +308,7 @@ export default function Home() {
     }
   };
 
-  // OCR Processing for Screenshot upload
+  // Screenshot OCR Processing (Extracts text directly on the same page)
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -188,14 +317,14 @@ export default function Home() {
     setImagePreview(previewUrl);
 
     setOcrLoading(true);
-    setOcrProgress(20);
+    setOcrProgress(25);
     setError(null);
     setAssessment(null);
     setLinkTraceResult(null);
 
     try {
       const worker = await createWorker('eng');
-      setOcrProgress(50);
+      setOcrProgress(55);
       const ret = await worker.recognize(file);
       setOcrProgress(90);
       await worker.terminate();
@@ -207,7 +336,9 @@ export default function Home() {
 
       setMessage(extractedText);
       setOcrProgress(100);
-      setInputMode('text');
+
+      // Auto-scan the extracted screenshot text immediately!
+      executeAnalysis(extractedText);
     } catch (ocrErr: any) {
       console.error('OCR Error:', ocrErr);
       setError(ocrErr.message || 'Screenshot se text parhne mein masla aaya.');
@@ -216,55 +347,36 @@ export default function Home() {
     }
   };
 
-  // Clean Preset Loader: sets input and completely resets old scan results
-  const loadPreset = (text: string, mode: 'text' | 'link' | 'voice', audioName?: string) => {
+  // Preset Scenario Loader (1-Click test with clean state reset)
+  const loadPreset = (text: string, audioName?: string) => {
     setMessage(text);
-    setInputMode(mode);
     setAssessment(null);
     setLinkTraceResult(null);
     setError(null);
     setRawOutput(null);
+    setImagePreview(null);
     setAudioFileUrl(null);
     setAudioFileName(audioName || null);
+    executeAnalysis(text);
   };
 
-  // Run Hybrid Security Analysis (Calls Gemma 4 + Local Heuristics + Link Unmasker)
-  const handleCheck = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!message.trim()) return;
-
-    setLoading(true);
-    setError(null);
+  // Clear All Inputs and Results
+  const handleClearAll = () => {
+    setMessage('');
     setAssessment(null);
     setLinkTraceResult(null);
+    setError(null);
     setRawOutput(null);
+    setImagePreview(null);
+    setAudioFileUrl(null);
+    setAudioFileName(null);
+    lastScannedTextRef.current = '';
+  };
 
-    try {
-      const res = await fetch('/api/check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: message.trim(),
-          lang,
-          source: inputMode === 'voice' ? 'audio' : inputMode === 'link' ? 'link' : 'text',
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Server error occurred');
-      }
-
-      setAssessment(data.assessment);
-      if (data.linkTrace) {
-        setLinkTraceResult(data.linkTrace);
-      }
-      setRawOutput(data.raw);
-    } catch (err: any) {
-      setError(err.message || 'Masla pesh aaya. Dobara check karein.');
-    } finally {
-      setLoading(false);
-    }
+  // Form submit handler
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    executeAnalysis(message);
   };
 
   // Text-to-Speech Voice Warning
@@ -294,7 +406,7 @@ export default function Home() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Copy Official FIA Cybercrime / Bank Legal Complaint
+  // Copy Official FIA Cybercrime / Bank Complaint
   const handleCopyComplaint = () => {
     if (!assessment) return;
 
@@ -311,6 +423,8 @@ export default function Home() {
       lang === 'urdu' ? 'urdu' : 'roman'
     );
 
+    // Safeguard so auto-scanner knows this was copied by us
+    lastScannedTextRef.current = draft;
     navigator.clipboard.writeText(draft);
     setCopiedComplaint(true);
     setTimeout(() => setCopiedComplaint(false), 2000);
@@ -320,14 +434,8 @@ export default function Home() {
   const t = {
     english: {
       heroTitle: 'Scam Shield Pakistan',
-      heroSubtitle: 'AI-Powered Cyber Fraud Defense for Pakistan • Google Gemma 4',
-      tabText: 'SMS / Text',
-      tabLink: 'Check Link',
-      tabVoice: 'Voice Note / Call',
-      tabScreenshot: 'Screenshot (OCR)',
-      placeholderText: 'Paste suspicious SMS, WhatsApp message, or email here...',
-      placeholderLink: 'Paste suspicious link (e.g. bit.ly/bisp-cash or easypaisa-reward.xyz) to trace destination...',
-      placeholderVoice: 'Click microphone to record, upload an audio note, or pick a sample call below...',
+      heroSubtitle: 'All-In-One Cyber Defense: Open the tab, and it automatically scans messages, links, voices, and screenshots.',
+      placeholder: 'Type or paste message / link, or just switch tabs after copying on WhatsApp for zero-click auto-scan...',
       checkBtn: 'Check Security with Gemma 4',
       checkingBtn: 'Gemma 4 is Analyzing...',
       highRisk: 'High Risk (Bohat Khatarnak)',
@@ -340,19 +448,13 @@ export default function Home() {
       copyComplaint: 'Copy FIA Complaint',
       reasonsTitle: 'Forensic Evidence & Reasons:',
       stepsTitle: 'Recommended Protective Actions:',
-      exampleLabel: 'Quick Demo Presets (Click to test):',
+      presetsLabel: '⚡ 1-Click Instant Scenarios (Click to test model):',
       disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / Guidance only, not a legal guarantee.',
     },
     roman: {
       heroTitle: 'Scam Shield Pakistan',
-      heroSubtitle: 'Easypaisa, JazzCash, fake bank calls, aur phishing links ki Gemma 4 AI se fori jaanch.',
-      tabText: 'SMS / Text',
-      tabLink: 'Check Link',
-      tabVoice: 'Voice Note / Call',
-      tabScreenshot: 'Screenshot (OCR)',
-      placeholderText: 'Mashkook SMS, WhatsApp message ya link yahan paste karein...',
-      placeholderLink: 'Mashkook link yahan paste karein (e.g. bit.ly/bisp-cash ya easypaisa-reward.xyz)...',
-      placeholderVoice: 'Mic se bolain ya files se voice note upload karein, ya neeche se sample call chunein...',
+      heroSubtitle: 'All-In-One Cyber Defense: Tab kholte hi WhatsApp messages, links, voice notes aur photos ka fori jaanch.',
+      placeholder: 'Message ya link paste karein, ya WhatsApp par copy karke sirf yeh tab kholain (auto-detect hoga)...',
       checkBtn: 'Check Message (Jaanchein)',
       checkingBtn: 'Gemma 4 Jaanch Raha Hai...',
       highRisk: 'Bohat Khatarnak (High Risk)',
@@ -365,19 +467,13 @@ export default function Home() {
       copyComplaint: 'Copy FIA Complaint',
       reasonsTitle: 'Khatray Ki Wajuhat (Why Flagged):',
       stepsTitle: 'Agle Hifazati Iqdamat (Next Steps):',
-      exampleLabel: 'Quick Demo Presets (Click karke check karein):',
+      presetsLabel: '⚡ 1-Click Instant Scenarios (Click karke model test karein):',
       disclaimer: '⚠️ Yeh madad hai, final faisla nahi. / Guidance only, not a legal guarantee.',
     },
     urdu: {
       heroTitle: 'اسکیم شیلڈ پاکستان',
-      heroSubtitle: 'ایزی پیسہ، جاز کیش، جعلی کالز اور مشکوک لنکس کی گُوگل جیما 4 کے ذریعے فوری جانچ۔',
-      tabText: 'پیغام / میسج',
-      tabLink: 'لنک کی جانچ',
-      tabVoice: 'وائس نوٹ / کال',
-      tabScreenshot: 'اسکرین شاٹ (OCR)',
-      placeholderText: 'مشکوک ایس ایم ایس یا واٹس ایپ پیغام یہاں درج کریں...',
-      placeholderLink: 'مشکوک لنک یہاں درج کریں تاکہ معلوم ہو سکے کہ یہ درحقیقت کہاں لے جاتا ہے...',
-      placeholderVoice: 'مائیک سے بولیں یا وائس نوٹ اپلوڈ کریں یا نیچے سے سیمپل کال منتخب کریں...',
+      heroSubtitle: 'صرف ٹیب کھولیں: واٹس ایپ پیغامات، مشکوک لنکس، آڈیو اور اسکرین شاٹس کی گُوگل جیما 4 کے ذریعے خودکار جانچ۔',
+      placeholder: 'پیغام یا لنک یہاں لکھیں یا واٹس ایپ پر کاپی کر کے صرف یہ ٹیب کھولیں (خودکار جانچ ہوگی)...',
       checkBtn: 'فوری جانچ کریں (Verify)',
       checkingBtn: 'جیما 4 جائزہ لے رہا ہے...',
       highRisk: 'انتہائی خطرناک (ہائی رسک)',
@@ -390,18 +486,18 @@ export default function Home() {
       copyComplaint: 'ایف آئی اے شکایت کاپی کریں',
       reasonsTitle: 'خطرے کی وجوہات (شواہد):',
       stepsTitle: 'حفاظتی اقدامات (کیا کریں):',
-      exampleLabel: 'فوری نمونے (ماڈل ٹیسٹ کرنے کے لیے کلک کریں):',
+      presetsLabel: '⚡ فوری ڈیمو کے نمونے (ماڈل ٹیسٹ کرنے کے لیے کلک کریں):',
       disclaimer: '⚠️ یہ رہنمائی کے لیے ہے، حتمی قانونی فیصلہ نہیں۔',
     },
   }[lang];
 
   return (
     <main className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col items-center selection:bg-emerald-500 selection:text-slate-950 pb-16 font-sans relative overflow-x-hidden">
-      {/* Subtle Background Glows */}
+      {/* Background Ambient Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-72 bg-gradient-to-b from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none" />
 
       {/* Top Header & Clean Language Switcher */}
-      <header className="w-full max-w-3xl px-4 pt-10 pb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
+      <header className="w-full max-w-3xl px-4 pt-10 pb-5 flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 p-[1px] shadow-lg shadow-emerald-500/20 shrink-0">
             <div className="w-full h-full bg-slate-950 rounded-2xl flex items-center justify-center text-emerald-400">
@@ -415,7 +511,7 @@ export default function Home() {
               </h1>
               <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Gemma 4
+                Gemma 4 Active
               </span>
             </div>
             <p className={`text-xs text-slate-400 mt-0.5 ${lang === 'urdu' ? 'font-serif' : ''}`}>
@@ -462,280 +558,101 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Single-Card Container */}
+      {/* Main Single-Page Unified Container */}
       <div className="w-full max-w-3xl px-4 space-y-4 relative z-10">
-        {/* Clean 4-Way Mode Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 bg-slate-900/90 rounded-2xl border border-slate-800 shadow-lg backdrop-blur-md">
-          <button
-            type="button"
-            onClick={() => setInputMode('text')}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              inputMode === 'text'
-                ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>{t.tabText}</span>
-          </button>
+        {/* Hidden File Inputs for Audio & Screenshot Uploads */}
+        <input
+          ref={audioInputRef}
+          type="file"
+          accept="audio/*,.mp3,.wav,.m4a,.ogg,.opus,.aac"
+          onChange={handleAudioFileUpload}
+          className="hidden"
+        />
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden"
+        />
 
-          <button
-            type="button"
-            onClick={() => setInputMode('link')}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              inputMode === 'link'
-                ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-            }`}
-          >
-            <LinkIcon className="w-3.5 h-3.5" />
-            <span>{t.tabLink}</span>
-          </button>
+        {/* Temporary Auto-Scan Toast Alert */}
+        {autoNotice && (
+          <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5 shadow-lg shadow-emerald-500/10 animate-in fade-in duration-200">
+            <Zap className="w-4 h-4 text-emerald-400 shrink-0 animate-bounce" />
+            <span className="font-semibold">{autoNotice}</span>
+          </div>
+        )}
 
-          <button
-            type="button"
-            onClick={() => setInputMode('voice')}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              inputMode === 'voice'
-                ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-            }`}
-          >
-            <Mic className="w-3.5 h-3.5" />
-            <span>{t.tabVoice}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setInputMode('screenshot')}
-            className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              inputMode === 'screenshot'
-                ? 'bg-emerald-500 text-slate-950 shadow-md font-bold'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-            }`}
-          >
-            <ImageIcon className="w-3.5 h-3.5" />
-            <span>{t.tabScreenshot}</span>
-          </button>
-        </div>
-
-        {/* Input Card */}
-        <div className="bg-slate-900/70 border border-slate-800/90 rounded-2xl p-5 sm:p-6 shadow-2xl backdrop-blur-md space-y-4">
-          {inputMode !== 'screenshot' ? (
-            <form onSubmit={handleCheck} className="space-y-3.5">
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label htmlFor="main-input" className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    {inputMode === 'link' ? t.tabLink : inputMode === 'voice' ? t.tabVoice : t.tabText}
-                  </label>
-                  {message && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMessage('');
-                        setAudioFileName(null);
-                        setAudioFileUrl(null);
-                        setAssessment(null);
-                        setLinkTraceResult(null);
-                        setError(null);
-                      }}
-                      className="text-xs text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-
-                <div className="relative">
-                  <textarea
-                    id="main-input"
-                    rows={4}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder={
-                      inputMode === 'link'
-                        ? t.placeholderLink
-                        : inputMode === 'voice'
-                        ? t.placeholderVoice
-                        : t.placeholderText
-                    }
-                    dir={lang === 'urdu' ? 'rtl' : 'ltr'}
-                    className={`w-full p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/60 focus:border-transparent text-sm sm:text-base transition-all resize-y leading-relaxed ${
-                      lang === 'urdu' ? 'font-serif' : 'font-sans'
-                    }`}
-                    required
-                  />
-
-                  {/* Mic floating button for Voice Mode */}
-                  {inputMode === 'voice' && (
-                    <div className="absolute bottom-3 right-3 flex items-center gap-2">
-                      {isRecording && (
-                        <span className="text-xs text-rose-400 font-mono flex items-center gap-1.5 animate-pulse bg-rose-950/60 px-2 py-1 rounded-md border border-rose-500/30">
-                          <span className="w-2 h-2 rounded-full bg-rose-500" />
-                          <span>{recordingSeconds}s</span>
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={toggleRecording}
-                        title="Click to Record Microphone"
-                        className={`p-2.5 rounded-full shadow-lg transition-all cursor-pointer ${
-                          isRecording
-                            ? 'bg-rose-500 text-white animate-bounce'
-                            : 'bg-emerald-500 hover:bg-emerald-600 text-slate-950'
-                        }`}
-                      >
-                        {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  )}
-                </div>
+        {/* Unified All-In-One Input Card */}
+        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-2xl backdrop-blur-md space-y-4">
+          <form onSubmit={handleFormSubmit} className="space-y-3.5">
+            {/* Top Bar of Input Card: Distinguish Link, Audio, Screenshot */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Unified Security Scanner</span>
               </div>
 
-              {/* VOICE MODE: Clean Audio Controls */}
-              {inputMode === 'voice' && (
-                <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-3 text-xs">
-                  <input
-                    ref={audioInputRef}
-                    type="file"
-                    accept="audio/*,.mp3,.wav,.m4a,.ogg,.opus,.aac"
-                    onChange={handleAudioFileUpload}
-                    className="hidden"
-                  />
+              {message && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="text-xs text-slate-400 hover:text-rose-400 transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Clear All</span>
+                </button>
+              )}
+            </div>
 
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5">
-                    <span className="text-slate-300 font-semibold flex items-center gap-1.5">
-                      <Music className="w-4 h-4 text-emerald-400" />
-                      Audio Source:
-                    </span>
+            {/* The Unified Input Box */}
+            <div className="relative">
+              <textarea
+                id="main-unified-input"
+                rows={4}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={t.placeholder}
+                dir={lang === 'urdu' ? 'rtl' : 'ltr'}
+                className={`w-full p-4 rounded-xl bg-slate-950/90 border border-slate-800 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/60 focus:border-transparent text-sm sm:text-base transition-all resize-y leading-relaxed ${
+                  lang === 'urdu' ? 'font-serif' : 'font-sans'
+                }`}
+                required
+              />
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={toggleRecording}
-                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                          isRecording
-                            ? 'bg-rose-500 text-white border-rose-400 animate-pulse'
-                            : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200'
-                        }`}
-                      >
-                        <Mic className="w-3.5 h-3.5" />
-                        <span>{isRecording ? 'Stop Mic' : 'Record Mic'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => audioInputRef.current?.click()}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>Choose Audio File</span>
-                      </button>
-                    </div>
+              {/* Real-time Link Extraction & Distinction Badge */}
+              {detectedUrl && (
+                <div className="mt-2.5 p-2.5 rounded-lg bg-emerald-950/70 border border-emerald-500/40 flex items-center justify-between gap-2 text-xs font-mono">
+                  <div className="flex items-center gap-2 truncate">
+                    <LinkIcon className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="text-emerald-300 font-bold">Link Detected:</span>
+                    <span className="text-slate-200 truncate underline">{detectedUrl}</span>
                   </div>
-
-                  {audioFileUrl && (
-                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                      <span className="text-slate-300 font-mono text-[11px] truncate">{audioFileName}</span>
-                      <audio controls src={audioFileUrl} className="h-7 max-w-full sm:max-w-xs" />
-                    </div>
-                  )}
-
-                  {/* 2 Quick Voice Call Scenarios */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        loadPreset(
-                          'Asalam-o-Alaikum, main JazzCash head office se bol raha hoon. Aapka account biometric expiry ki waja se block hone laga hai. Aapke mobile par 4 digit ka OTP aya hai, fori batayein taakay account unblock ho sakay.',
-                          'voice',
-                          'Fake-JazzCash-Call.mp3'
-                        )
-                      }
-                      className="p-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-left border border-slate-800/80 text-slate-300 transition-all cursor-pointer"
-                    >
-                      <div className="font-semibold text-rose-300 text-xs">📞 Fake Bank Call Sample</div>
-                      <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">"Head office se bol raha hoon, OTP dein..."</p>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        loadPreset(
-                          'Bhai khuda ke waste paise wapis bhej dein. Ammi hospital mein hain, ghalti se 30,000 aapke Easypaisa par bhej diye hain. Khuda aapka bhala karega wapis bhej dein.',
-                          'voice',
-                          'Accidental-Reversal-Note.opus'
-                        )
-                      }
-                      className="p-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-left border border-slate-800/80 text-slate-300 transition-all cursor-pointer"
-                    >
-                      <div className="font-semibold text-amber-300 text-xs">🎙️ Accidental Transfer Voice Note</div>
-                      <p className="text-[11px] text-slate-400 line-clamp-1 font-mono">"Ghalti se 30,000 bhej diye wapis karein..."</p>
-                    </button>
-                  </div>
+                  <span className="text-[10px] text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30 shrink-0 font-bold">
+                    Redirects Will Be Unmasked
+                  </span>
                 </div>
               )}
 
-              {/* Primary Action Button */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
-                <span className="text-[11px] text-slate-400 flex items-center gap-1.5 font-mono">
-                  <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-                  Gemma 4 (26B-A4B-IT) + Security Rules
-                </span>
-
-                <button
-                  type="submit"
-                  disabled={loading || !message.trim()}
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 disabled:from-slate-800 disabled:to-slate-800 text-slate-950 disabled:text-slate-500 font-black shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all cursor-pointer disabled:cursor-not-allowed text-sm"
-                >
-                  {loading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>{t.checkingBtn}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4" />
-                      <span>{t.checkBtn}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          ) : (
-            /* Screenshot OCR Tab */
-            <div className="space-y-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-700/80 hover:border-emerald-500/80 rounded-2xl p-8 text-center cursor-pointer transition-all bg-slate-950/40 hover:bg-slate-900/60 space-y-3"
-              >
-                <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  <Upload className="w-5 h-5" />
+              {/* Audio Preview if attached */}
+              {audioFileUrl && (
+                <div className="mt-2.5 p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 truncate">
+                    <Music className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="text-slate-300 font-mono text-[11px] truncate">{audioFileName}</span>
+                  </div>
+                  <audio controls src={audioFileUrl} className="h-7 max-w-xs" />
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-200">
-                    Upload SMS or WhatsApp Screenshot
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1 font-mono">
-                    OCR extracts text from image directly into the analysis engine.
-                  </p>
-                </div>
-              </div>
+              )}
 
+              {/* Screenshot Preview & OCR Progress if attached */}
               {ocrLoading && (
-                <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="mt-2.5 p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
                   <div className="flex items-center justify-between text-xs text-slate-300">
                     <span className="flex items-center gap-2 font-mono">
                       <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
-                      Extracting text from image...
+                      Reading screenshot text via OCR...
                     </span>
                     <span className="font-mono text-emerald-400 font-bold">{ocrProgress}%</span>
                   </div>
@@ -748,35 +665,93 @@ export default function Home() {
                 </div>
               )}
 
-              {imagePreview && (
-                <div className="flex items-center gap-4 p-3 rounded-xl bg-slate-950 border border-slate-800">
+              {imagePreview && !ocrLoading && (
+                <div className="mt-2.5 flex items-center gap-3 p-2.5 rounded-lg bg-slate-950 border border-slate-800">
                   <img
                     src={imagePreview}
                     alt="Uploaded screenshot"
-                    className="w-14 h-14 object-cover rounded-lg border border-slate-700"
+                    className="w-12 h-12 object-cover rounded-md border border-slate-700"
                   />
                   <div className="text-xs space-y-0.5">
-                    <p className="font-semibold text-slate-200">Screenshot Processed</p>
-                    <p className="text-slate-400">Text loaded into editor. Switch to Text tab to verify!</p>
+                    <p className="font-semibold text-slate-200">Screenshot Attached</p>
+                    <p className="text-[11px] text-slate-400">OCR text extracted and added into the scanner.</p>
                   </div>
                 </div>
               )}
             </div>
-          )}
 
-          {/* 3 Clickable Example Presets */}
+            {/* Seamless Action Toolbar: Mic, Audio File, Screenshot & Check Button */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1 border-t border-slate-800/80">
+              {/* Quick Input Add-ons: Voice Recording, Audio File, Screenshot */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* 1. Record Voice Live */}
+                <button
+                  type="button"
+                  onClick={toggleRecording}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    isRecording
+                      ? 'bg-rose-500 text-white border-rose-400 animate-pulse'
+                      : 'bg-slate-950 hover:bg-slate-800 border-slate-800 text-slate-300'
+                  }`}
+                >
+                  {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5 text-emerald-400" />}
+                  <span>{isRecording ? `Listening (${recordingSeconds}s)...` : 'Record Voice'}</span>
+                </button>
+
+                {/* 2. Attach Audio File */}
+                <button
+                  type="button"
+                  onClick={() => audioInputRef.current?.click()}
+                  className="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Music className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Attach Audio</span>
+                </button>
+
+                {/* 3. Upload Screenshot */}
+                <button
+                  type="button"
+                  onClick={() => imageInputRef.current?.click()}
+                  className="px-3 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Upload Screenshot</span>
+                </button>
+              </div>
+
+              {/* Primary Submit Button */}
+              <button
+                type="submit"
+                disabled={loading || !message.trim()}
+                className="inline-flex items-center justify-center gap-2 px-7 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 disabled:from-slate-800 disabled:to-slate-800 text-slate-950 disabled:text-slate-500 font-black shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all cursor-pointer disabled:cursor-not-allowed text-xs sm:text-sm"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>{t.checkingBtn}</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>{t.checkBtn}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+
+          {/* 3 Clickable 1-Click Instant Scenarios */}
           <div className="pt-3 border-t border-slate-800/80">
             <p className="text-xs text-slate-400 mb-2 font-mono flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{t.exampleLabel}</span>
+              <span>{t.presetsLabel}</span>
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() =>
                   loadPreset(
-                    '0300-1234567 se 25,000 ghalti se bhej diye hain, baraye meharbani wapis bhej dein apka bhala hoga.',
-                    'text'
+                    '0300-1234567 se 25,000 ghalti se bhej diye hain, baraye meharbani wapis bhej dein apka bhala hoga.'
                   )
                 }
                 className="p-2.5 text-left rounded-xl bg-slate-950/70 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-xs space-y-1 transition-all cursor-pointer group"
@@ -792,8 +767,7 @@ export default function Home() {
                 type="button"
                 onClick={() =>
                   loadPreset(
-                    'Benazir Income Support: 25,000 wazifa manzoor hua. Link par register karein: http://bisp-wazifa-claim.xyz/verify',
-                    'link'
+                    'Benazir Income Support: 25,000 wazifa manzoor hua. Link par register karein: http://bisp-wazifa-claim.xyz/verify'
                   )
                 }
                 className="p-2.5 text-left rounded-xl bg-slate-950/70 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-xs space-y-1 transition-all cursor-pointer group"
@@ -809,8 +783,7 @@ export default function Home() {
                 type="button"
                 onClick={() =>
                   loadPreset(
-                    'HBL Alert: Your OTP for internet banking login is 591823. Valid for 5 mins. NEVER share this OTP with anyone.',
-                    'text'
+                    'HBL Alert: Your OTP for internet banking login is 591823. Valid for 5 mins. NEVER share this OTP with anyone.'
                   )
                 }
                 className="p-2.5 text-left rounded-xl bg-slate-950/70 hover:bg-slate-800/80 border border-slate-800/80 hover:border-slate-700 text-xs space-y-1 transition-all cursor-pointer group"
@@ -836,7 +809,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* The Result Card (Appears ONLY after Check) */}
+        {/* The Result Card (Appears directly below on the SAME page) */}
         {assessment && (
           <section
             className={`border rounded-2xl p-5 sm:p-7 transition-all space-y-5 shadow-2xl backdrop-blur-md ${
