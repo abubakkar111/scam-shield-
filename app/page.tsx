@@ -2,11 +2,10 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
+  Shield,
   ShieldAlert,
   ShieldCheck,
   AlertTriangle,
-  Send,
-  Sparkles,
   RefreshCw,
   Copy,
   Check,
@@ -24,18 +23,13 @@ import {
   X,
   Zap,
   Cpu,
-  Shield,
   Smartphone,
-  Info,
   CheckCircle2,
-  Share2,
   FileText,
   AlertCircle,
   Radio,
   PhoneCall,
   PhoneOff,
-  Bell,
-  BellRing,
 } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
 import { generateFiaComplaint } from '@/lib/complaint';
@@ -77,12 +71,12 @@ export default function Home() {
   // 3-Way Language Selector: English, Roman Urdu, Urdu (اردو)
   const [lang, setLang] = useState<'english' | 'roman' | 'urdu'>('roman');
 
-  // Input & Processing States
+  // Input & Verification States
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Auto-Detect & Live Sentry Call Guard States
+  // Background Protection & Live Call Guard States
   const [sentryActive, setSentryActive] = useState(true);
   const [sentryListening, setSentryListening] = useState(false);
   const [liveAudioSnippet, setLiveAudioSnippet] = useState<string | null>(null);
@@ -91,11 +85,11 @@ export default function Home() {
   const lastScannedTextRef = useRef<string>('');
   const sentryRecognitionRef = useRef<any>(null);
 
-  // Result States
+  // Results & Forensics States
   const [assessment, setAssessment] = useState<CombinedAssessment | null>(null);
   const [linkTraceResult, setLinkTraceResult] = useState<LinkTraceData | null>(null);
   const [rawOutput, setRawOutput] = useState<string | null>(null);
-  const [showDeepForensics, setShowDeepForensics] = useState(false);
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   const [copiedComplaint, setCopiedComplaint] = useState(false);
 
   // Screenshot OCR States
@@ -119,7 +113,7 @@ export default function Home() {
     return match ? match[0] : null;
   }, [message]);
 
-  // Web Audio API Synthesized Police / Security Siren Alert
+  // Audio Siren Warning for Critical Alerts
   const playSirenAlert = useCallback(() => {
     try {
       if (typeof window === 'undefined') return;
@@ -137,7 +131,7 @@ export default function Home() {
       osc.frequency.setValueAtTime(880, now + 0.3);
       osc.frequency.setValueAtTime(587, now + 0.45);
 
-      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.setValueAtTime(0.25, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
 
       osc.connect(gain);
@@ -156,7 +150,7 @@ export default function Home() {
       if (typeof window !== 'undefined' && 'Notification' in window) {
         if (Notification.permission === 'granted') {
           new Notification(title, { body });
-        } else if (Notification.permission !== 'denied') {
+        } else if (Notification.permission !== 'default') {
           Notification.requestPermission().then((perm) => {
             if (perm === 'granted') {
               new Notification(title, { body });
@@ -167,19 +161,19 @@ export default function Home() {
     } catch (e) {}
   }, []);
 
-  // Trigger Live Interception Modal with Audio Siren + Notification
+  // Trigger Live Threat Modal with Audio Siren + Notification
   const triggerInterception = useCallback(
     (alert: InterceptionAlert) => {
       setInterceptionAlert(alert);
       playSirenAlert();
-      triggerNativeNotification(`🚨 SCAM SHIELD ALERT: ${alert.scamType}`, alert.recommendedAction);
+      triggerNativeNotification(`⚠️ SCAM SHIELD ALERT: ${alert.scamType}`, alert.recommendedAction);
 
       // Voice Warning
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         const speech =
           lang === 'urdu'
-            ? 'خبردار! کال یا پیغام پر فراڈ کی کوشش پکڑی گئی ہے۔ اپنا او ٹی پی یا رقم ہرگز نہ بھیجیں!'
-            : 'Warning! Fraud detected on your active call or message. Do not share your OTP or send funds!';
+            ? 'خبردار! مشکوک کال یا پیغام پکڑا گیا ہے۔ اپنا او ٹی پی یا رقم ہرگز نہ بھیجیں!'
+            : 'Warning! Potential fraud detected on your active call or message. Do not share your OTP or send funds!';
         const utterance = new SpeechSynthesisUtterance(speech);
         utterance.rate = 1.0;
         window.speechSynthesis.speak(utterance);
@@ -240,7 +234,7 @@ export default function Home() {
 
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data.error || 'Security scanner error occurred');
+          throw new Error(data.error || 'Verification server error');
         }
 
         setAssessment(data.assessment);
@@ -260,7 +254,7 @@ export default function Home() {
           window.speechSynthesis.speak(utterance);
         }
       } catch (err: any) {
-        setError(err.message || 'Inspection failed. Please retry.');
+        setError(err.message || 'Verification failed. Please retry.');
       } finally {
         setLoading(false);
       }
@@ -277,7 +271,6 @@ export default function Home() {
         } catch (e) {}
       }
       setSentryListening(false);
-      setSentryActive(false);
       setLiveAudioSnippet(null);
       return;
     }
@@ -288,8 +281,8 @@ export default function Home() {
     if (!SpeechRecognition) {
       setError(
         lang === 'urdu'
-          ? 'براؤزر لائیو کال گارڈ کو سپورٹ نہیں کرتا۔ برائے مہربانی کروم استعمال کریں۔'
-          : 'Live Call Sentry is not supported in this browser. Please use Chrome or Edge.'
+          ? 'براؤزر لائیو کال مانیٹرنگ سپورٹ نہیں کرتا۔ برائے مہربانی کروم استعمال کریں۔'
+          : 'Live Call Monitoring is not supported in this browser. Please use Chrome or Edge.'
       );
       return;
     }
@@ -302,7 +295,6 @@ export default function Home() {
 
       recognition.onstart = () => {
         setSentryListening(true);
-        setSentryActive(true);
         setError(null);
       };
 
@@ -341,11 +333,11 @@ export default function Home() {
           if (isThreat && !interceptionAlert) {
             triggerInterception({
               source: 'call',
-              scamType: 'Live Call Extortion / OTP Theft',
+              scamType: 'Live Call Extortion / Credential Theft',
               triggerSnippet: text,
               threatLevel: 'high',
               recommendedAction:
-                'Caller is asking for credentials or financial reversal. DO NOT SHARE ANY CODES OR TAP APPROVE!',
+                'Caller is asking for codes or money transfer. DO NOT SHARE ANY PIN OR APPROVE TRANSACTIONS.',
             });
             setMessage(`[Live Call Interception] "${text}"`);
             executeAnalysis(text);
@@ -354,7 +346,7 @@ export default function Home() {
       };
 
       recognition.onerror = (err: any) => {
-        console.warn('Live Sentry listener error:', err);
+        console.warn('Call listener error:', err);
         setSentryListening(false);
       };
 
@@ -396,7 +388,7 @@ export default function Home() {
           }
 
           setMessage(trimmed);
-          setAutoNotice('⚡ Message copied from WhatsApp intercepted & auto-scanned!');
+          setAutoNotice('⚡ Message copied from WhatsApp detected & verified.');
           setTimeout(() => setAutoNotice(null), 3500);
 
           // Check if it's a suspicious link or scam
@@ -415,11 +407,11 @@ export default function Home() {
           if (suspicious) {
             triggerInterception({
               source: hasLink ? 'link' : 'clipboard',
-              scamType: hasLink ? 'Suspicious External Phishing Link' : 'WhatsApp Social Engineering Attempt',
+              scamType: hasLink ? 'Unverified External Link' : 'WhatsApp Money Transfer Request',
               triggerSnippet: trimmed,
               threatLevel: 'high',
               recommendedAction:
-                'Do not click the destination link or send money. Run full verification before responding.',
+                'Do not click the link or send funds. Check your account balance directly in the official app.',
             });
           }
 
@@ -462,7 +454,7 @@ export default function Home() {
     executeAnalysis(audioText);
   };
 
-  // Direct Speech Recognition for the Textarea
+  // Direct Speech Recording for Textarea
   const toggleDirectRecording = () => {
     if (isRecording) {
       if (directRecognitionRef.current) {
@@ -678,48 +670,45 @@ export default function Home() {
   const t = {
     english: {
       appName: 'Scam Shield',
-      appSubtitle: 'AI Cyber Threat Intelligence',
-      headline: 'Stop Scams Before They Strike.',
-      tagline: 'Instant forensic detection for WhatsApp scams, fake Easypaisa transfers, phishing links, and voice notes.',
-      placeholder: 'Paste suspicious message, SMS, or link here... Or use mic, audio, and screenshot below.',
+      appSubtitle: 'Pakistan Anti-Fraud & Cyber Safety',
+      headline: 'Verify Any Message, Caller, or Link',
+      tagline: 'Instantly detect fake Easypaisa transfers, WhatsApp lottery traps, phishing websites, and OTP theft.',
+      placeholder: 'Paste suspicious SMS, WhatsApp message, or link... Or use voice & photo below.',
       pasteBtn: 'Paste',
-      scanBtn: 'Scan Threat',
-      scanningBtn: 'Analyzing...',
-      highRisk: 'CRITICAL SCAM DETECTED',
-      medRisk: 'SUSPICIOUS ACTIVITY (CAUTION)',
+      verifyBtn: 'Verify Safety',
+      verifyingBtn: 'Checking...',
+      highRisk: 'CRITICAL FRAUD DETECTED',
+      medRisk: 'SUSPICIOUS (CAUTION REQUIRED)',
       lowRisk: 'NO OBVIOUS THREATS FOUND',
-      highDesc: 'High-confidence indicators of financial fraud, credential theft, or social engineering extortion.',
-      medDesc: 'Suspicious characteristics identified. Do not send funds or click links without manual verification.',
-      lowDesc: 'No obvious malicious patterns found. Always exercise standard digital caution.',
-      listenBtn: 'Listen Warning',
-      copyComplaint: 'Copy FIA Police Report',
-      indicatorsTitle: 'Forensic Intelligence & Indicators',
-      actionsTitle: 'Immediate Defensive Action Plan',
-      examplesTitle: 'Or test these real-world Pakistani scam scenarios:',
-      disclaimer: 'Guidance only, not a legal guarantee. Always cross-verify with official bank helplines.',
-      deepForensics: 'Technical Intelligence & Gemma 4 Breakdown',
-      sentryBannerTitle: 'Live Call & Background Sentry Guard',
-      sentryBannerDesc: 'Real-time protection against incoming scam calls, voice notes & intercepted links.',
-      sentryListeningState: 'LISTENING FOR LIVE CALLS',
-      sentryIdleState: 'GUARD READY',
-      sentryStartBtn: 'Start Live Guard',
-      sentryStopBtn: 'Pause Guard',
-      simulateCall: '⚡ Test Call Alert',
-      modalTitle: '🚨 CRITICAL FRAUD INTERCEPTED ON ACTIVE CALL / MESSAGE!',
-      modalHangUp: 'Hang Up & Block Caller',
+      highDesc: 'High-confidence indicators of financial theft or social engineering coercion.',
+      medDesc: 'Suspicious patterns detected. Avoid clicking links or transferring funds without manual confirmation.',
+      lowDesc: 'No obvious malicious patterns identified. Standard vigilance recommended.',
+      listenBtn: 'Listen Alert',
+      copyComplaint: 'Copy FIA Cybercrime Report',
+      indicatorsTitle: 'Security Findings & Indicators',
+      actionsTitle: 'Recommended Protective Steps',
+      examplesTitle: 'Quick Verification Tests:',
+      disclaimer: 'Advisory service for fraud prevention. Always confirm via official 3737/8558 helplines.',
+      technicalDetails: 'Technical Security Forensics',
+      guardTitle: 'Active Protection',
+      guardActive: 'Monitoring live calls & copied messages',
+      guardPaused: 'Protection paused',
+      testAlertBtn: 'Test Alert',
+      modalTitle: 'FRAUD ATTEMPT DETECTED',
+      modalHangUp: 'Block Sender & Copy FIA Report',
       modalViewDossier: 'View Security Dossier',
     },
     roman: {
       appName: 'Scam Shield',
-      appSubtitle: 'Pakistan Ka AI Cyber Defense',
-      headline: 'Har Fraud Se Pehle Alert Ho Jayein.',
-      tagline: 'Easypaisa, JazzCash, fake calls, screenshots aur mashkook links ki Gemma 4 AI se fori jaanch.',
-      placeholder: 'SMS, WhatsApp message, ya link yahan paste karein... Ya neeche mic ya screenshot use karein.',
+      appSubtitle: 'Pakistan Anti-Fraud & Cyber Safety',
+      headline: 'Kisi Bhi Message, Call Ya Link Ki Fori Jaanch',
+      tagline: 'Easypaisa, JazzCash, fake calls, screenshots aur mashkook links se foran bachein.',
+      placeholder: 'SMS, WhatsApp message, ya link yahan paste karein... Ya neeche mic ya photo use karein.',
       pasteBtn: 'Paste Karein',
-      scanBtn: 'Threat Scan Karein',
-      scanningBtn: 'Jaanch Raha Hai...',
-      highRisk: 'BOHAT KHATARNAK (HIGH RISK)',
-      medRisk: 'EHTIYAT KAREIN (MEDIUM RISK)',
+      verifyBtn: 'Threat Check Karein',
+      verifyingBtn: 'Jaanch Jari Hai...',
+      highRisk: 'BOHAT KHATARNAK (FRAUD)',
+      medRisk: 'EHTIYAT KAREIN (SUSPICIOUS)',
       lowRisk: 'KOI WAZEH KHATRA NAHI MILA',
       highDesc: 'Is message ya call mein fraud aur raqam churanay ke qawi shawahid hain.',
       medDesc: 'Kuch mashkook pehlu mile hain. Tasdeeq ke baghair koi raqam ya code na dein.',
@@ -728,97 +717,77 @@ export default function Home() {
       copyComplaint: 'FIA Report Copy Karein',
       indicatorsTitle: 'Khatray Ki Forensic Wajuhat',
       actionsTitle: 'Agle Hifazati Iqdamat (Next Steps)',
-      examplesTitle: 'Ya in aam Pakistani frauds ko test karein:',
+      examplesTitle: 'Aam Pakistani Fraud Scenarios:',
       disclaimer: 'Yeh madad hai, final faisla nahi. Pehle helpline se tasdeeq karein.',
-      deepForensics: 'Technical Forensics & Gemma 4 Details',
-      sentryBannerTitle: 'Live Call & Background Sentry Guard',
-      sentryBannerDesc: 'Call ke dauran scam awaz, OTP mangnay aur links ki fori nigrani.',
-      sentryListeningState: 'CALL NIGRAANI ACTIVE HAI',
-      sentryIdleState: 'GUARD READY HAI',
-      sentryStartBtn: 'Live Guard Chalaein',
-      sentryStopBtn: 'Guard Rokein',
-      simulateCall: '⚡ Fake Call Test',
-      modalTitle: '🚨 LIVE CALL YA MESSAGE PAR FRAUD PAKRA GAYA!',
-      modalHangUp: 'Call Kat Karein & Block Karein',
+      technicalDetails: 'Technical Security Forensics',
+      guardTitle: 'Active Protection',
+      guardActive: 'Call aur copied messages par nigrani active hai',
+      guardPaused: 'Nigrani band hai',
+      testAlertBtn: 'Alert Test Karein',
+      modalTitle: 'FRAUD KA KHATRA PAKRA GAYA!',
+      modalHangUp: 'Block Karein & FIA Report Leinge',
       modalViewDossier: 'Mukammal Report Dekhein',
     },
     urdu: {
       appName: 'اسکیم شیلڈ',
-      appSubtitle: 'پاکستان کا مصنوعی ذہانت پر مبنی سائبر ڈیفنس سسٹم',
-      headline: 'ہر فراڈ اور دھوکے سے باخبر رہیں۔',
-      tagline: 'ایزی پیسہ، جاز کیش، جعلی کالز اور مشکوک لنکس کی گُوگل جیما 4 کے ذریعے فوری فرانزک جانچ۔',
+      appSubtitle: 'پاکستان سائبر فراڈ سیفٹی سروس',
+      headline: 'کسی بھی مشکوک کال، میسج یا لنک کی فوری تصدیق',
+      tagline: 'ایزی پیسہ، جاز کیش، جعلی کالز اور دھوکہ دہی والے لنکس سے اپنے آپ کو محفوظ رکھیں۔',
       placeholder: 'مشکوک ایس ایم ایس، پیغام یا لنک یہاں درج کریں یا مائیک/تصویر کا استعمال کریں...',
       pasteBtn: 'پیسٹ کریں',
-      scanBtn: 'فوری جانچ کریں',
-      scanningBtn: 'جائزہ جاری ہے...',
-      highRisk: 'انتہائی خطرناک (ہائی رسک)',
-      medRisk: 'احتیاط برتیں (درمیانہ خطرہ)',
+      verifyBtn: 'فوری تصدیق کریں',
+      verifyingBtn: 'تصدیق جاری ہے...',
+      highRisk: 'انتہائی خطرناک (فراڈ کا قوی خطرہ)',
+      medRisk: 'احتیاط برتیں (مشکوک علامات)',
       lowRisk: 'کوئی واضح خطرہ نہیں ملا',
       highDesc: 'اس پیغام یا کال میں مالی فراڈ اور رقم ہتھیانے کے واضح شواہد موجود ہیں۔',
       medDesc: 'کچھ مشکوک علامات پائی گئی ہیں۔ تصدیق کے بغیر کوئی قدم نہ اٹھائیں۔',
       lowDesc: 'کوئی فوری خطرہ ظاہر نہیں ہوا، مگر ہمیشہ محتاط رہیں۔',
       listenBtn: 'صوتی الرٹ سنیں',
       copyComplaint: 'ایف آئی اے رپورٹ بنائیں',
-      indicatorsTitle: 'فرانزک شواہد اور خطرے کی وجوہات',
+      indicatorsTitle: 'سیکورٹی شواہد اور خطرے کی وجوہات',
       actionsTitle: 'فوری حفاظتی اقدامات',
-      examplesTitle: 'یا ان پاکستانی فراڈ پیغامات کا تجربہ کریں:',
+      examplesTitle: 'آزمائشی نمونے:',
       disclaimer: 'یہ رہنمائی کے لیے ہے، حتمی قانونی فیصلہ نہیں۔',
-      deepForensics: 'تکنیکی شواہد اور جیما 4 تفصیلات',
-      sentryBannerTitle: 'لائیو کال اور پس منظر سینٹری گارڈ',
-      sentryBannerDesc: 'فون کال کے دوران دھوکہ دہی کی آواز، او ٹی پی چوری اور مشکوک لنکس کی فوری نگرانی۔',
-      sentryListeningState: 'کال کی نگرانی جاری ہے',
-      sentryIdleState: 'گارڈ تیار ہے',
-      sentryStartBtn: 'لائیو گارڈ شروع کریں',
-      sentryStopBtn: 'گارڈ روکیں',
-      simulateCall: '⚡ جعلی کال کا ٹیسٹ',
-      modalTitle: '🚨 لائیو کال یا پیغام پر خطرناک فراڈ پکڑا گیا!',
-      modalHangUp: 'کال کاٹ دیں اور بلاک کریں',
+      technicalDetails: 'تکنیکی سیکورٹی شواہد',
+      guardTitle: 'لائیو پروٹیکشن',
+      guardActive: 'فون کالز اور کاپی پیغامات کی نگرانی فعال ہے',
+      guardPaused: 'نگرانی بند ہے',
+      testAlertBtn: 'الرٹ کا تجربہ کریں',
+      modalTitle: 'مشکوک فراڈ پکڑا گیا!',
+      modalHangUp: 'بلاک کریں اور ایف آئی اے رپورٹ لیں',
       modalViewDossier: 'سیکورٹی رپورٹ دیکھیں',
     },
   }[lang];
 
   return (
-    <main className="min-h-screen bg-[#07090E] text-slate-100 flex flex-col items-center selection:bg-emerald-500 selection:text-slate-950 pb-24 font-sans relative overflow-x-hidden antialiased">
-      {/* Ambient Lighting Accents */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-80 bg-[radial-gradient(ellipse_60%_50%_at_50%_-10%,rgba(16,185,129,0.15),transparent)] pointer-events-none" />
-      <div className="absolute top-40 right-10 w-72 h-72 bg-emerald-500/[0.03] rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-60 left-10 w-72 h-72 bg-cyan-500/[0.03] rounded-full blur-3xl pointer-events-none" />
-
-      {/* Floating Top Header */}
-      <header className="w-full max-w-3xl px-4 sm:px-6 pt-6 pb-3 flex items-center justify-between gap-4 relative z-20">
+    <main className="min-h-screen bg-[#090D16] text-slate-100 flex flex-col items-center selection:bg-emerald-500 selection:text-slate-950 pb-20 font-sans relative antialiased">
+      {/* Top Professional Navigation Bar */}
+      <header className="w-full max-w-2xl px-4 sm:px-6 pt-6 pb-4 flex items-center justify-between gap-4 border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
-          <div className="relative group cursor-pointer" onClick={handleClearAll}>
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-cyan-500 p-[1px] shadow-[0_0_20px_rgba(16,185,129,0.25)] transition-all group-hover:shadow-[0_0_28px_rgba(16,185,129,0.45)]">
-              <div className="w-full h-full bg-[#0B0F17] rounded-2xl flex items-center justify-center text-emerald-400">
-                <ShieldAlert className="w-5 h-5 transition-transform group-hover:scale-110" />
-              </div>
-            </div>
+          <div
+            className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-emerald-400 shadow-sm cursor-pointer"
+            onClick={handleClearAll}
+          >
+            <Shield className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className={`text-lg sm:text-xl font-black text-white tracking-tight ${lang === 'urdu' ? 'font-serif' : ''}`}>
-                {t.appName}
-              </h1>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Gemma 4 IT
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 font-mono tracking-tight hidden sm:block">
+            <h1 className={`text-base sm:text-lg font-bold text-white tracking-tight ${lang === 'urdu' ? 'font-serif' : ''}`}>
+              {t.appName}
+            </h1>
+            <p className="text-[11px] text-slate-400 tracking-tight">
               {t.appSubtitle}
             </p>
           </div>
         </div>
 
-        {/* 3-Way Language Segmented Pill */}
-        <div className="flex items-center bg-[#0F1420]/90 p-1 rounded-2xl border border-white/[0.08] shadow-inner backdrop-blur-xl">
+        {/* 3-Way Language Selector */}
+        <div className="flex items-center bg-slate-900/90 p-0.5 rounded-xl border border-slate-800 text-xs">
           <button
             type="button"
             onClick={() => setLang('english')}
-            className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              lang === 'english'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black shadow-md shadow-emerald-500/20'
-                : 'text-slate-400 hover:text-white'
+            className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+              lang === 'english' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-white'
             }`}
           >
             EN
@@ -826,10 +795,8 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setLang('roman')}
-            className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              lang === 'roman'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black shadow-md shadow-emerald-500/20'
-                : 'text-slate-400 hover:text-white'
+            className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+              lang === 'roman' ? 'bg-slate-800 text-white font-bold' : 'text-slate-400 hover:text-white'
             }`}
           >
             Roman
@@ -837,10 +804,8 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setLang('urdu')}
-            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              lang === 'urdu'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/20 font-serif'
-                : 'text-slate-400 hover:text-white'
+            className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+              lang === 'urdu' ? 'bg-slate-800 text-white font-serif' : 'text-slate-400 hover:text-white'
             }`}
           >
             اردو
@@ -848,26 +813,26 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero Showcase Headline */}
-      <section className="w-full max-w-2xl px-4 sm:px-6 pt-4 pb-4 text-center space-y-2 relative z-10">
+      {/* Hero Headline */}
+      <section className="w-full max-w-2xl px-4 sm:px-6 pt-6 pb-4 text-left space-y-1">
         <h2
-          className={`text-3xl sm:text-4xl font-black tracking-tight text-white ${
-            lang === 'urdu' ? 'font-serif text-3xl sm:text-4xl leading-relaxed' : ''
+          className={`text-2xl sm:text-3xl font-extrabold tracking-tight text-white ${
+            lang === 'urdu' ? 'font-serif text-2xl sm:text-3xl leading-relaxed text-right' : ''
           }`}
         >
           {t.headline}
         </h2>
         <p
-          className={`text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed ${
-            lang === 'urdu' ? 'font-serif text-base' : ''
+          className={`text-xs sm:text-sm text-slate-400 leading-relaxed ${
+            lang === 'urdu' ? 'font-serif text-base text-right' : ''
           }`}
         >
           {t.tagline}
         </p>
       </section>
 
-      {/* Main Container */}
-      <div className="w-full max-w-2xl px-4 sm:px-6 space-y-4 relative z-10">
+      {/* Main Verification Container */}
+      <div className="w-full max-w-2xl px-4 sm:px-6 space-y-3">
         {/* Hidden File Inputs */}
         <input
           ref={audioInputRef}
@@ -884,340 +849,295 @@ export default function Home() {
           className="hidden"
         />
 
-        {/* ========================================================================= */}
-        {/* THE LIVE CALL & BACKGROUND SENTRY GUARD (The Requested Active Tab Radar) */}
-        {/* ========================================================================= */}
-        <div className="relative rounded-2xl p-[1px] bg-gradient-to-r from-emerald-500/30 via-teal-500/20 to-cyan-500/30 shadow-lg">
-          <div className="bg-[#0B0F17]/95 backdrop-blur-xl rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    sentryListening
-                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-[0_0_15px_rgba(244,63,94,0.4)] animate-pulse'
-                      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.25)]'
-                  }`}
-                >
-                  {sentryListening ? <PhoneCall className="w-4 h-4 animate-bounce" /> : <Radio className="w-4 h-4" />}
-                </div>
-                {sentryListening && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full animate-ping" />
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs sm:text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
-                    {t.sentryBannerTitle}
-                  </h3>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider ${
-                      sentryListening
-                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                    }`}
-                  >
-                    {sentryListening ? t.sentryListeningState : t.sentryIdleState}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
-                  {t.sentryBannerDesc}
-                </p>
-              </div>
-            </div>
-
-            {/* Sentry Action Controls */}
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0 pt-1 sm:pt-0 border-t sm:border-0 border-white/[0.06]">
-              {/* Simulate Live Call Button (for instant evaluation) */}
-              <button
-                type="button"
-                onClick={handleSimulateScammerCall}
-                title="Test simulated fake scammer phone call"
-                className="px-2.5 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/[0.1] text-amber-300 hover:text-amber-200 text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
-              >
-                <span>{t.simulateCall}</span>
-              </button>
-
-              {/* Start / Stop Live Call Listener */}
-              <button
-                type="button"
-                onClick={toggleLiveSentry}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${
-                  sentryListening
-                    ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/30'
-                    : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20'
-                }`}
-              >
-                {sentryListening ? (
-                  <>
-                    <PhoneOff className="w-3.5 h-3.5" />
-                    <span>{t.sentryStopBtn}</span>
-                  </>
-                ) : (
-                  <>
-                    <PhoneCall className="w-3.5 h-3.5" />
-                    <span>{t.sentryStartBtn}</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Live Audio Transcription Wave (shows when listening) */}
-          {sentryListening && liveAudioSnippet && (
-            <div className="bg-[#07090E]/90 px-4 py-2 border-t border-white/[0.06] rounded-b-2xl flex items-center gap-2 text-xs font-mono text-emerald-300 truncate">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
-              <span className="text-slate-400 shrink-0 font-bold">Live Audio Intercept:</span>
-              <span className="text-slate-200 truncate italic">"{liveAudioSnippet}"</span>
-            </div>
-          )}
-        </div>
-
         {/* Temporary Auto-Scan Toast Alert */}
         {autoNotice && (
-          <div className="p-3 rounded-2xl bg-emerald-950/90 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5 shadow-xl shadow-emerald-950/40 animate-in fade-in zoom-in-95 duration-200 backdrop-blur-xl">
-            <Zap className="w-4 h-4 text-emerald-400 shrink-0 animate-bounce" />
-            <span className="font-semibold text-xs leading-tight">{autoNotice}</span>
+          <div className="p-3 rounded-xl bg-slate-900 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5 shadow-md">
+            <Zap className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="font-semibold text-xs">{autoNotice}</span>
           </div>
         )}
 
-        {/* THE OMNI-SHIELD UNIFIED PROMPT CANVAS */}
-        <div className="relative rounded-3xl p-[1px] bg-gradient-to-b from-white/[0.16] via-white/[0.05] to-transparent shadow-[0_10px_40px_-15px_rgba(0,0,0,0.7)] transition-all">
-          <div className="bg-[#0B0F17]/95 backdrop-blur-2xl rounded-3xl p-4 sm:p-5 space-y-3">
-            <form onSubmit={handleFormSubmit} className="space-y-3">
-              {/* Textarea Area */}
-              <div className="relative">
-                <textarea
-                  id="main-unified-input"
-                  rows={3}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder={t.placeholder}
-                  dir={lang === 'urdu' ? 'rtl' : 'ltr'}
-                  className={`w-full p-3.5 sm:p-4 rounded-2xl bg-[#07090E]/90 border border-white/[0.08] text-slate-100 placeholder-slate-500 text-sm sm:text-base focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-none leading-relaxed ${
-                    lang === 'urdu' ? 'font-serif text-lg leading-loose' : 'font-sans'
-                  }`}
-                  required
-                />
+        {/* VERIFICATION CARD */}
+        <div className="rounded-2xl bg-[#0D121D] border border-slate-800 shadow-xl p-4 sm:p-5 space-y-3">
+          <form onSubmit={handleFormSubmit} className="space-y-3">
+            {/* Input Textarea */}
+            <div className="relative">
+              <textarea
+                id="main-unified-input"
+                rows={3}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={t.placeholder}
+                dir={lang === 'urdu' ? 'rtl' : 'ltr'}
+                className={`w-full p-3.5 rounded-xl bg-[#080B13] border border-slate-800 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-slate-600 transition-all resize-none leading-relaxed ${
+                  lang === 'urdu' ? 'font-serif text-base leading-loose' : 'font-sans'
+                }`}
+                required
+              />
 
-                {/* Real-time Link Detection Chip */}
-                {detectedUrl && (
-                  <div className="mt-2 p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between gap-2 text-xs font-mono backdrop-blur-md">
-                    <div className="flex items-center gap-2 truncate">
-                      <LinkIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span className="text-emerald-400 font-bold text-xs">Link Detected:</span>
-                      <span className="text-slate-200 truncate underline text-xs">{detectedUrl}</span>
-                    </div>
-                    <span className="text-[10px] text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-md font-bold shrink-0">
-                      Unmasking
-                    </span>
+              {/* Real-time Link Detection Chip */}
+              {detectedUrl && (
+                <div className="mt-2 p-2 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-2 text-xs font-mono">
+                  <div className="flex items-center gap-2 truncate">
+                    <LinkIcon className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span className="text-slate-400 text-xs">Link:</span>
+                    <span className="text-slate-200 truncate underline text-xs">{detectedUrl}</span>
                   </div>
-                )}
+                  <span className="text-[10px] text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded font-mono shrink-0">
+                    Inspection Ready
+                  </span>
+                </div>
+              )}
 
-                {/* Audio Attachment Preview */}
-                {audioFileUrl && (
-                  <div className="mt-2 p-2.5 rounded-xl bg-[#0F1420] border border-white/[0.08] flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-2 truncate">
-                      <Music className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
-                      <span className="text-slate-300 font-mono text-xs truncate">{audioFileName}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <audio controls src={audioFileUrl} className="h-7 max-w-[160px] sm:max-w-[200px]" />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAudioFileUrl(null);
-                          setAudioFileName(null);
-                        }}
-                        className="text-slate-400 hover:text-white p-1"
-                        title="Remove Audio"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+              {/* Audio Attachment Preview */}
+              {audioFileUrl && (
+                <div className="mt-2 p-2 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 truncate">
+                    <Music className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="text-slate-300 font-mono text-xs truncate">{audioFileName}</span>
                   </div>
-                )}
-
-                {/* Screenshot OCR Scanning Bar */}
-                {ocrLoading && (
-                  <div className="mt-2 p-3 rounded-xl bg-[#0F1420] border border-white/[0.08] space-y-2 text-xs">
-                    <div className="flex items-center justify-between text-xs text-slate-300">
-                      <span className="flex items-center gap-2 font-mono">
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
-                        Scanning screenshot OCR...
-                      </span>
-                      <span className="font-mono text-emerald-400 font-bold">{ocrProgress}%</span>
-                    </div>
-                    <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${ocrProgress}%` }} />
-                    </div>
-                  </div>
-                )}
-
-                {/* Screenshot Loaded Preview */}
-                {imagePreview && !ocrLoading && (
-                  <div className="mt-2 flex items-center justify-between p-2.5 rounded-xl bg-[#0F1420] border border-white/[0.08]">
-                    <div className="flex items-center gap-3">
-                      <img src={imagePreview} alt="Screenshot" className="w-10 h-10 object-cover rounded-lg border border-slate-700" />
-                      <div className="text-xs space-y-0.5">
-                        <p className="font-semibold text-slate-200">Screenshot Attached</p>
-                        <p className="text-[11px] text-slate-400">OCR text extracted into scanner.</p>
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <audio controls src={audioFileUrl} className="h-7 max-w-[150px] sm:max-w-[200px]" />
                     <button
                       type="button"
-                      onClick={() => setImagePreview(null)}
+                      onClick={() => {
+                        setAudioFileUrl(null);
+                        setAudioFileName(null);
+                      }}
                       className="text-slate-400 hover:text-white p-1"
-                      title="Remove Screenshot"
+                      title="Remove Audio"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Screenshot OCR Progress Bar */}
+              {ocrLoading && (
+                <div className="mt-2 p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between text-xs text-slate-300">
+                    <span className="flex items-center gap-2 font-mono">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                      Reading screenshot text...
+                    </span>
+                    <span className="font-mono text-emerald-400 font-bold">{ocrProgress}%</span>
+                  </div>
+                  <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${ocrProgress}%` }} />
+                  </div>
+                </div>
+              )}
+
+              {/* Screenshot Loaded Preview */}
+              {imagePreview && !ocrLoading && (
+                <div className="mt-2 flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <img src={imagePreview} alt="Screenshot" className="w-9 h-9 object-cover rounded border border-slate-700" />
+                    <div className="text-xs space-y-0.5">
+                      <p className="font-medium text-slate-200">Screenshot Attached</p>
+                      <p className="text-[11px] text-slate-400">Text extracted to verification box.</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setImagePreview(null)}
+                    className="text-slate-400 hover:text-white p-1"
+                    title="Remove Screenshot"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Verification Dock */}
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+              {/* Media Inputs */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* 1-Click Paste Clipboard Button */}
+                <button
+                  type="button"
+                  onClick={handlePasteClipboard}
+                  title="Paste from Clipboard"
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="hidden sm:inline">{t.pasteBtn}</span>
+                </button>
+
+                {/* Voice Record Button */}
+                <button
+                  type="button"
+                  onClick={toggleDirectRecording}
+                  title="Record Speech"
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                    isRecording
+                      ? 'bg-rose-500 text-white animate-pulse'
+                      : 'bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white'
+                  }`}
+                >
+                  {isRecording ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5 text-slate-400" />}
+                  <span>{isRecording ? `${recordingSeconds}s` : 'Voice'}</span>
+                </button>
+
+                {/* Screenshot Button */}
+                <button
+                  type="button"
+                  onClick={() => imageInputRef.current?.click()}
+                  title="Upload Screenshot"
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="hidden sm:inline">Photo</span>
+                </button>
+
+                {/* Audio File Button */}
+                <button
+                  type="button"
+                  onClick={() => audioInputRef.current?.click()}
+                  title="Attach Audio File"
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Music className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="hidden sm:inline">Audio</span>
+                </button>
+              </div>
+
+              {/* Right Side: Clear & Verify Button */}
+              <div className="flex items-center gap-2">
+                {message && (
+                  <button
+                    type="button"
+                    onClick={handleClearAll}
+                    className="px-2 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 text-xs font-medium cursor-pointer"
+                  >
+                    Clear
+                  </button>
                 )}
-              </div>
 
-              {/* Bottom Integrated Action Bar */}
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/[0.06]">
-                {/* Media Capture Tool Buttons */}
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  {/* Mic Recording Button */}
-                  <button
-                    type="button"
-                    onClick={toggleDirectRecording}
-                    title="Record Live Speech"
-                    className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                      isRecording
-                        ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/30'
-                        : 'bg-[#0F1420] hover:bg-slate-800/80 border border-white/[0.08] text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-emerald-400" />}
-                    <span>{isRecording ? `${recordingSeconds}s` : 'Voice'}</span>
-                  </button>
-
-                  {/* Screenshot Button */}
-                  <button
-                    type="button"
-                    onClick={() => imageInputRef.current?.click()}
-                    title="Attach Screenshot"
-                    className="px-2.5 py-2 sm:px-3 sm:py-2 rounded-xl bg-[#0F1420] hover:bg-slate-800/80 border border-white/[0.08] text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <ImageIcon className="w-4 h-4 text-emerald-400" />
-                    <span className="hidden sm:inline">Photo</span>
-                  </button>
-
-                  {/* Audio File Button */}
-                  <button
-                    type="button"
-                    onClick={() => audioInputRef.current?.click()}
-                    title="Attach Audio File"
-                    className="px-2.5 py-2 sm:px-3 sm:py-2 rounded-xl bg-[#0F1420] hover:bg-slate-800/80 border border-white/[0.08] text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <Music className="w-4 h-4 text-emerald-400" />
-                    <span className="hidden sm:inline">Audio</span>
-                  </button>
-
-                  {/* 1-Click Paste Clipboard Button */}
-                  <button
-                    type="button"
-                    onClick={handlePasteClipboard}
-                    title="Paste from Clipboard"
-                    className="px-2.5 py-2 sm:px-3 sm:py-2 rounded-xl bg-[#0F1420] hover:bg-slate-800/80 border border-white/[0.08] text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <Copy className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="hidden sm:inline">{t.pasteBtn}</span>
-                  </button>
-                </div>
-
-                {/* Right: Clear + Primary Action Button */}
-                <div className="flex items-center gap-2">
-                  {message && (
-                    <button
-                      type="button"
-                      onClick={handleClearAll}
-                      className="px-2.5 py-2 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer text-xs font-semibold"
-                      title="Clear"
-                    >
-                      Clear
-                    </button>
+                <button
+                  type="submit"
+                  disabled={loading || !message.trim()}
+                  className="inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 text-slate-950 disabled:text-slate-500 font-bold text-xs sm:text-sm active:scale-95 transition-all cursor-pointer disabled:cursor-not-allowed shadow-sm"
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>{t.verifyingBtn}</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>{t.verifyBtn}</span>
+                    </>
                   )}
-
-                  <button
-                    type="submit"
-                    disabled={loading || !message.trim()}
-                    className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 disabled:from-slate-800 disabled:to-slate-800 text-slate-950 disabled:text-slate-500 font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>{t.scanningBtn}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>{t.scanBtn}</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
+                </button>
               </div>
-            </form>
+            </div>
+          </form>
+        </div>
+
+        {/* CLEAN PROTECTION STATUS BAR */}
+        <div className="rounded-xl bg-[#0D121D] border border-slate-800/80 px-3.5 py-2.5 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2.5 truncate">
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                sentryListening ? 'bg-rose-500 animate-ping' : sentryActive ? 'bg-emerald-400' : 'bg-slate-600'
+              }`}
+            />
+            <div className="truncate">
+              <span className="font-semibold text-slate-200 mr-2">{t.guardTitle}:</span>
+              <span className="text-slate-400 text-[11px] truncate">
+                {sentryListening ? 'Active Call Listening...' : sentryActive ? t.guardActive : t.guardPaused}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Live Call Listener Toggle */}
+            <button
+              type="button"
+              onClick={toggleLiveSentry}
+              className={`px-2 py-1 rounded text-[11px] font-medium border transition-colors cursor-pointer ${
+                sentryListening
+                  ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+              }`}
+            >
+              {sentryListening ? 'Stop Call Mic' : 'Call Mic'}
+            </button>
+
+            {/* 1-Click Test Alert Button */}
+            <button
+              type="button"
+              onClick={handleSimulateScammerCall}
+              className="text-[11px] text-slate-400 hover:text-emerald-400 font-mono underline cursor-pointer"
+            >
+              {t.testAlertBtn}
+            </button>
           </div>
         </div>
 
-        {/* Error Alert Box */}
-        {error && (
-          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-start gap-3 text-xs shadow-lg backdrop-blur-md">
-            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold text-sm">Security Notice</p>
-              <p className="mt-0.5 leading-relaxed">{error}</p>
-            </div>
+        {/* Live Audio Intercept Ticker (if listening) */}
+        {sentryListening && liveAudioSnippet && (
+          <div className="bg-[#080B13] px-3.5 py-2 rounded-xl border border-slate-800 flex items-center gap-2 text-xs font-mono text-emerald-400 truncate">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
+            <span className="text-slate-400 shrink-0">Heard:</span>
+            <span className="text-slate-200 truncate italic">"{liveAudioSnippet}"</span>
           </div>
         )}
 
-        {/* THE EXECUTIVE SECURITY DOSSIER (Result View) */}
+        {/* Error Alert Box */}
+        {error && (
+          <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300 flex items-start gap-2.5 text-xs">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">{error}</p>
+          </div>
+        )}
+
+        {/* SECURITY VERIFICATION REPORT (Results Screen) */}
         {assessment && (
           <section
             id="security-dossier"
-            className={`rounded-3xl p-5 sm:p-7 transition-all space-y-6 shadow-2xl backdrop-blur-2xl border ${
+            className={`rounded-2xl p-5 sm:p-6 transition-all space-y-5 border ${
               assessment.finalRisk === 'high'
-                ? 'bg-gradient-to-b from-rose-950/25 via-[#0B0F17] to-[#07090E] border-rose-500/40 shadow-[0_0_60px_-15px_rgba(244,63,94,0.3)]'
+                ? 'bg-[#120B10] border-rose-500/40'
                 : assessment.finalRisk === 'medium'
-                ? 'bg-gradient-to-b from-amber-950/25 via-[#0B0F17] to-[#07090E] border-amber-500/40 shadow-[0_0_60px_-15px_rgba(245,158,11,0.3)]'
-                : 'bg-gradient-to-b from-emerald-950/25 via-[#0B0F17] to-[#07090E] border-emerald-500/40 shadow-[0_0_60px_-15px_rgba(16,185,129,0.3)]'
+                ? 'bg-[#12100B] border-amber-500/40'
+                : 'bg-[#0B120E] border-emerald-500/40'
             }`}
           >
-            {/* Header: Traffic Light Status */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
-              <div className="flex items-center gap-3.5">
+            {/* Verdict Header */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center gap-3">
                 <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                     assessment.finalRisk === 'high'
-                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-rose-500/25'
+                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
                       : assessment.finalRisk === 'medium'
-                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-amber-500/25'
-                      : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-emerald-500/25'
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                      : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                   }`}
                 >
                   {assessment.finalRisk === 'high' ? (
-                    <ShieldAlert className="w-7 h-7" />
+                    <ShieldAlert className="w-5 h-5" />
                   ) : assessment.finalRisk === 'medium' ? (
-                    <AlertTriangle className="w-7 h-7" />
+                    <AlertTriangle className="w-5 h-5" />
                   ) : (
-                    <CheckCircle2 className="w-7 h-7" />
+                    <ShieldCheck className="w-5 h-5" />
                   )}
                 </div>
 
                 <div>
                   <h3
-                    className={`text-xl sm:text-2xl font-black tracking-tight ${
+                    className={`text-lg sm:text-xl font-bold tracking-tight ${
                       assessment.finalRisk === 'high'
                         ? 'text-rose-400'
                         : assessment.finalRisk === 'medium'
                         ? 'text-amber-400'
                         : 'text-emerald-400'
-                    } ${lang === 'urdu' ? 'font-serif text-2xl' : ''}`}
+                    } ${lang === 'urdu' ? 'font-serif text-xl' : ''}`}
                   >
                     {assessment.finalRisk === 'high'
                       ? t.highRisk
@@ -1225,7 +1145,7 @@ export default function Home() {
                       ? t.medRisk
                       : t.lowRisk}
                   </h3>
-                  <p className={`text-xs sm:text-sm text-slate-300 mt-0.5 leading-relaxed ${lang === 'urdu' ? 'font-serif' : ''}`}>
+                  <p className={`text-xs text-slate-300 mt-0.5 leading-relaxed ${lang === 'urdu' ? 'font-serif' : ''}`}>
                     {assessment.finalRisk === 'high'
                       ? t.highDesc
                       : assessment.finalRisk === 'medium'
@@ -1235,24 +1155,24 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Action Buttons: Listen Aloud & Copy Complaint */}
+              {/* Action Buttons */}
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={handleSpeakVerdict}
-                  title="Listen Aloud"
-                  className="px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/[0.1] text-emerald-400 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+                  title="Listen Alert"
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-emerald-400 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
                 >
-                  <Volume2 className="w-4 h-4" />
+                  <Volume2 className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">{t.listenBtn}</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleCopyComplaint}
-                  title="Copy Legal Report"
-                  className="px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/[0.1] text-slate-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+                  title="Copy FIA Report"
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
                 >
-                  {copiedComplaint ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  {copiedComplaint ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   <span>{copiedComplaint ? 'Copied' : t.copyComplaint}</span>
                 </button>
               </div>
@@ -1260,152 +1180,143 @@ export default function Home() {
 
             {/* Unmasked Destination Link Card */}
             {linkTraceResult && (
-              <div className="p-4 rounded-2xl bg-slate-950/80 border border-white/[0.08] space-y-2 text-xs font-mono">
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5 text-xs font-mono">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-300 flex items-center gap-1.5 uppercase text-xs">
-                    <LinkIcon className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+                    <LinkIcon className="w-3.5 h-3.5 text-cyan-400" />
                     Target Destination Unmasked:
                   </span>
                   {linkTraceResult.redirected && (
-                    <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[10px] font-bold">
                       Redirects Externally
                     </span>
                   )}
                 </div>
 
-                <div className="p-3 rounded-xl bg-[#07090E] border border-white/[0.06] space-y-1.5">
+                <div className="p-2.5 rounded-lg bg-[#080B13] border border-slate-800/80 space-y-1">
                   <div className="flex items-center gap-2 text-slate-400 text-xs truncate">
-                    <span>Input Link:</span>
+                    <span>Input:</span>
                     <span className="text-slate-300 truncate">{linkTraceResult.original}</span>
                   </div>
                   <div className="flex items-center gap-2 text-emerald-300 font-bold text-xs truncate">
-                    <ArrowRight className="w-4 h-4 shrink-0 text-emerald-400" />
-                    <span>Real Destination:</span>
+                    <ArrowRight className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                    <span>Real Site:</span>
                     <span className="truncate underline">{linkTraceResult.finalUrl}</span>
                   </div>
                 </div>
 
                 <p className="text-[11px] text-slate-400">
-                  <strong className="text-slate-200">Security Assessment:</strong> {linkTraceResult.verdict}
+                  <strong className="text-slate-300">Assessment:</strong> {linkTraceResult.verdict}
                 </p>
               </div>
             )}
 
             {/* Threat Meter Bar */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-slate-200 font-bold">Classification: {assessment.scamType}</span>
-                <span className="text-slate-400 font-bold">Threat Index: {assessment.threatScore}%</span>
+                <span className="text-slate-300 font-medium">Type: {assessment.scamType}</span>
+                <span className="text-slate-400">Confidence: {assessment.threatScore}%</span>
               </div>
-              <div className="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-white/[0.06]">
+              <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
                 <div
                   className={`h-full transition-all duration-500 rounded-full ${
                     assessment.finalRisk === 'high'
-                      ? 'bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.8)]'
+                      ? 'bg-rose-500'
                       : assessment.finalRisk === 'medium'
-                      ? 'bg-gradient-to-r from-amber-600 to-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.8)]'
-                      : 'bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.8)]'
+                      ? 'bg-amber-500'
+                      : 'bg-emerald-500'
                   }`}
                   style={{ width: `${assessment.threatScore}%` }}
                 />
               </div>
             </div>
 
-            {/* Forensic Reasons Cards */}
-            <div className="space-y-2.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                <AlertCircle className="w-4 h-4 text-amber-400" />
+            {/* Findings & Reasons */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wide flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
                 <span>{t.indicatorsTitle}</span>
               </h4>
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {assessment.reasons.map((r, i) => (
                   <li
                     key={i}
                     dir={lang === 'urdu' ? 'rtl' : 'ltr'}
-                    className={`flex items-start gap-3 text-xs sm:text-sm text-slate-200 bg-[#07090E]/80 p-3.5 rounded-2xl border border-white/[0.06] ${
+                    className={`flex items-start gap-2.5 text-xs sm:text-sm text-slate-200 bg-[#090D16]/80 p-3 rounded-xl border border-slate-800/80 ${
                       lang === 'urdu' ? 'font-serif text-base' : ''
                     }`}
                   >
-                    <span className="text-amber-400 font-black text-sm shrink-0 leading-none mt-1">•</span>
+                    <span className="text-amber-400 font-bold shrink-0 mt-0.5">•</span>
                     <span className="leading-relaxed">{r}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Protective Next Steps */}
-            <div className="space-y-2.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            {/* Actionable Next Steps */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wide flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                 <span>{t.actionsTitle}</span>
               </h4>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {assessment.nextSteps.map((s, i) => (
                   <li
                     key={i}
                     dir={lang === 'urdu' ? 'rtl' : 'ltr'}
-                    className={`flex items-start gap-2.5 text-xs sm:text-sm text-slate-200 bg-[#07090E]/80 p-3.5 rounded-2xl border border-white/[0.06] ${
-                      lang === 'urdu' ? 'font-serif text-base' : ''
+                    className={`flex items-start gap-2 text-xs text-slate-200 bg-[#090D16]/80 p-3 rounded-xl border border-slate-800/80 ${
+                      lang === 'urdu' ? 'font-serif text-sm' : ''
                     }`}
                   >
-                    <Lock className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                     <span className="leading-relaxed">{s}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Collapsible Deep Forensics & Gemma 4 Telemetry */}
-            <div className="pt-2 border-t border-white/[0.08]">
+            {/* Understated Technical Accordion (for Hackathon Judges) */}
+            <div className="pt-2 border-t border-slate-800/80">
               <button
                 type="button"
-                onClick={() => setShowDeepForensics(!showDeepForensics)}
-                className="w-full flex items-center justify-between text-xs text-slate-400 hover:text-slate-200 py-2 transition-colors font-mono cursor-pointer"
+                onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
+                className="w-full flex items-center justify-between text-xs text-slate-400 hover:text-slate-200 py-1 transition-colors font-mono cursor-pointer"
               >
-                <span className="flex items-center gap-2">
-                  <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="font-bold">{t.deepForensics}</span>
+                <span className="flex items-center gap-1.5">
+                  <Cpu className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{t.technicalDetails}</span>
                 </span>
-                {showDeepForensics ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {showTechnicalDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
 
-              {showDeepForensics && (
-                <div className="mt-3 space-y-3 animate-in fade-in duration-200">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 font-mono text-xs">
-                    <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-white/[0.06] space-y-1">
-                      <span className="font-bold text-emerald-300 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Google Gemma 4 AI
-                      </span>
+              {showTechnicalDetails && (
+                <div className="mt-2.5 space-y-2 font-mono text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                      <span className="font-semibold text-emerald-400">Google Gemma 4 IT</span>
                       <p className="text-[11px] text-slate-300">
                         Verdict: <strong className="uppercase">{assessment.layerBreakdown.gemmaVerdict}</strong>
                       </p>
-                      <p className="text-[11px] text-slate-400">
-                        {assessment.layerBreakdown.gemmaHighlights[0] || 'Linguistic context analyzed.'}
+                      <p className="text-[11px] text-slate-400 truncate">
+                        {assessment.layerBreakdown.gemmaHighlights[0] || 'Inference completed.'}
                       </p>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-white/[0.06] space-y-1">
-                      <span className="font-bold text-cyan-300 flex items-center gap-1.5">
-                        <Shield className="w-3.5 h-3.5" />
-                        Pakistani Heuristics Engine
-                      </span>
+                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+                      <span className="font-semibold text-cyan-400">Deterministic Rules Engine</span>
                       <p className="text-[11px] text-slate-300">
-                        Violations: <strong>{assessment.layerBreakdown.rulesHighlights.length} rules triggered</strong>
+                        Matches: {assessment.layerBreakdown.rulesHighlights.length} rules
                       </p>
                       <p className="text-[11px] text-slate-400 truncate">
-                        {assessment.layerBreakdown.rulesHighlights[0] || 'Zero blacklisted keywords found.'}
+                        {assessment.layerBreakdown.rulesHighlights[0] || 'No blacklist match.'}
                       </p>
                     </div>
                   </div>
 
                   {rawOutput && (
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-mono text-slate-500 uppercase">Gemma 4 JSON Output Payload:</p>
-                      <pre className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-emerald-300 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                        {rawOutput}
-                      </pre>
-                    </div>
+                    <pre className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-emerald-400 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap">
+                      {rawOutput}
+                    </pre>
                   )}
                 </div>
               )}
@@ -1413,19 +1324,12 @@ export default function Home() {
           </section>
         )}
 
-        {/* 3 REALISTIC SIMULATED SCENARIO CARDS (Consumer App Style) */}
+        {/* 3 AUTHENTIC PAKISTANI SCAM SCENARIOS (Quick Test Chips) */}
         {!assessment && (
-          <div className="pt-2 space-y-3">
-            <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
-              <span className="flex items-center gap-1.5">
-                <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{t.examplesTitle}</span>
-              </span>
-              <span className="text-[10px] text-slate-500">1-Tap Test</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* WhatsApp Fake Reversal Card */}
+          <div className="pt-2 space-y-2">
+            <p className="text-xs text-slate-400 font-medium">{t.examplesTitle}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {/* WhatsApp Fake Reversal */}
               <button
                 type="button"
                 onClick={() =>
@@ -1433,23 +1337,18 @@ export default function Home() {
                     '0300-1234567 se 25,000 ghalti se bhej diye hain, baraye meharbani wapis bhej dein apka bhala hoga.'
                   )
                 }
-                className="p-3.5 text-left rounded-2xl bg-[#0B0F17]/80 hover:bg-[#101622] border border-white/[0.06] hover:border-rose-500/40 text-xs space-y-2 transition-all cursor-pointer group shadow-sm active:scale-[0.98]"
+                className="p-3 text-left rounded-xl bg-[#0D121D] hover:bg-slate-800/80 border border-slate-800 text-xs space-y-1 transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">
-                    Easypaisa Scam
-                  </span>
-                  <span className="w-2 h-2 rounded-full bg-rose-500" />
+                  <span className="font-semibold text-slate-200">Easypaisa Reversal</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                 </div>
-                <p className="text-slate-300 font-medium text-xs line-clamp-2">
-                  "25,000 ghalti se bhej diye hain, maa hospital mein hai foran wapis karein..."
+                <p className="text-[11px] text-slate-400 line-clamp-2">
+                  "25,000 ghalti se bhej diye wapis bhej dein..."
                 </p>
-                <span className="text-[10px] text-slate-500 group-hover:text-emerald-400 transition-colors block font-mono">
-                  Tap to scan trap →
-                </span>
               </button>
 
-              {/* BISP Phishing Link Card */}
+              {/* 8171 BISP Link */}
               <button
                 type="button"
                 onClick={() =>
@@ -1457,23 +1356,18 @@ export default function Home() {
                     'Benazir Income Support: 25,000 wazifa manzoor hua. Link par register karein: http://bisp-wazifa-claim.xyz/verify'
                   )
                 }
-                className="p-3.5 text-left rounded-2xl bg-[#0B0F17]/80 hover:bg-[#101622] border border-white/[0.06] hover:border-amber-500/40 text-xs space-y-2 transition-all cursor-pointer group shadow-sm active:scale-[0.98]"
+                className="p-3 text-left rounded-xl bg-[#0D121D] hover:bg-slate-800/80 border border-slate-800 text-xs space-y-1 transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                    BISP Phishing
-                  </span>
-                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span className="font-semibold text-slate-200">8171 BISP Link</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                 </div>
-                <p className="text-slate-300 font-medium text-xs line-clamp-2">
-                  "8171: 25,000 wazifa manzoor hua. Link par register karein: bisp-wazifa-claim.xyz"
+                <p className="text-[11px] text-slate-400 line-clamp-2">
+                  "25,000 wazifa claim: bisp-wazifa-claim.xyz..."
                 </p>
-                <span className="text-[10px] text-slate-500 group-hover:text-emerald-400 transition-colors block font-mono">
-                  Tap to unmask link →
-                </span>
               </button>
 
-              {/* Genuine Bank OTP Card */}
+              {/* Genuine Bank OTP */}
               <button
                 type="button"
                 onClick={() =>
@@ -1481,130 +1375,106 @@ export default function Home() {
                     'HBL Alert: Your OTP for internet banking login is 591823. Valid for 5 mins. NEVER share this OTP with anyone.'
                   )
                 }
-                className="p-3.5 text-left rounded-2xl bg-[#0B0F17]/80 hover:bg-[#101622] border border-white/[0.06] hover:border-emerald-500/40 text-xs space-y-2 transition-all cursor-pointer group shadow-sm active:scale-[0.98]"
+                className="p-3 text-left rounded-xl bg-[#0D121D] hover:bg-slate-800/80 border border-slate-800 text-xs space-y-1 transition-all cursor-pointer group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                    Legit Bank OTP
-                  </span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="font-semibold text-slate-200">Genuine Bank OTP</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 </div>
-                <p className="text-slate-300 font-medium text-xs line-clamp-2">
-                  "HBL Alert: Your OTP is 591823. Valid for 5 mins. NEVER share with anyone."
+                <p className="text-[11px] text-slate-400 line-clamp-2">
+                  "Your HBL OTP is 591823. Never share with anyone."
                 </p>
-                <span className="text-[10px] text-slate-500 group-hover:text-emerald-400 transition-colors block font-mono">
-                  Tap to verify safety →
-                </span>
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* ========================================================================= */}
-      {/* THE LIVE HIGH-VOLTAGE INTERCEPTION POPUP MODAL (Zero-Click Threat Alert)  */}
-      {/* ========================================================================= */}
+      {/* ALERT POPUP MODAL (Zero-Click Interception) */}
       {interceptionAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg rounded-3xl p-[2px] bg-gradient-to-b from-rose-500 via-rose-600 to-amber-500 shadow-[0_0_80px_rgba(244,63,94,0.6)]">
-            <div className="bg-[#0B0F17] rounded-3xl p-6 sm:p-7 space-y-5 text-slate-100">
-              {/* Modal Top Alert Header */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/30 animate-pulse">
-                    <ShieldAlert className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase tracking-wider">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
-                      Live Interception
-                    </span>
-                    <h3 className="text-lg sm:text-xl font-black text-rose-400 tracking-tight mt-1">
-                      {t.modalTitle}
-                    </h3>
-                  </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md rounded-2xl bg-[#0D121D] border border-rose-500/50 shadow-2xl p-5 space-y-4 text-slate-100">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center shrink-0">
+                  <ShieldAlert className="w-5 h-5" />
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setInterceptionAlert(null)}
-                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Intercepted Snippet Box */}
-              <div className="p-4 rounded-2xl bg-rose-950/30 border border-rose-500/30 space-y-2">
-                <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="text-rose-300 font-bold uppercase">
-                    Source: {interceptionAlert.source === 'call' ? 'Live Phone Conversation' : 'Intercepted Clipboard / Link'}
+                <div>
+                  <span className="text-[10px] font-mono font-bold text-rose-400 uppercase tracking-wider block">
+                    Security Interception
                   </span>
-                  <span className="text-amber-300 font-bold">Threat: HIGH RISK</span>
-                </div>
-                <blockquote className="text-xs sm:text-sm text-slate-200 italic border-l-2 border-rose-500 pl-3 leading-relaxed">
-                  "{interceptionAlert.triggerSnippet}"
-                </blockquote>
-              </div>
-
-              {/* High Voltage Defensive Directives */}
-              <div className="p-3.5 rounded-2xl bg-[#07090E] border border-white/[0.08] space-y-2">
-                <h4 className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1.5 uppercase">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                  CRITICAL DEFENSIVE ACTION:
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-200 font-bold leading-relaxed">
-                  {interceptionAlert.recommendedAction}
-                </p>
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-400 pt-1">
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Never share SMS OTP
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Never reverse money
-                  </span>
+                  <h3 className="text-base font-bold text-white tracking-tight">
+                    {t.modalTitle}
+                  </h3>
                 </div>
               </div>
 
-              {/* Primary Modal Action Buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInterceptionAlert(null);
-                    // Copy legal report
-                    handleCopyComplaint();
-                  }}
-                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-black text-xs sm:text-sm shadow-lg shadow-rose-500/30 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <PhoneOff className="w-4 h-4" />
-                  <span>{t.modalHangUp}</span>
-                </button>
+              <button
+                type="button"
+                onClick={() => setInterceptionAlert(null)}
+                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInterceptionAlert(null);
-                    // Scroll to result dossier
-                    const elem = document.getElementById('security-dossier');
-                    if (elem) elem.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/[0.1] text-slate-200 font-bold text-xs sm:text-sm active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <FileText className="w-4 h-4 text-emerald-400" />
-                  <span>{t.modalViewDossier}</span>
-                </button>
-              </div>
+            {/* Intercepted Text */}
+            <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-500/25 space-y-1 text-xs">
+              <span className="text-[11px] font-semibold text-rose-300 uppercase block">
+                {interceptionAlert.source === 'call' ? 'Live Phone Call' : 'Intercepted Message / Link'}
+              </span>
+              <p className="text-slate-200 italic leading-relaxed">
+                "{interceptionAlert.triggerSnippet}"
+              </p>
+            </div>
+
+            {/* Directive */}
+            <div className="p-3 rounded-xl bg-[#080B13] border border-slate-800 text-xs space-y-1">
+              <span className="text-amber-400 font-semibold block uppercase text-[11px]">
+                Protective Directive:
+              </span>
+              <p className="text-slate-200 leading-relaxed">
+                {interceptionAlert.recommendedAction}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setInterceptionAlert(null);
+                  handleCopyComplaint();
+                }}
+                className="py-2.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <PhoneOff className="w-3.5 h-3.5" />
+                <span>{t.modalHangUp}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setInterceptionAlert(null);
+                  const elem = document.getElementById('security-dossier');
+                  if (elem) elem.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="py-2.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{t.modalViewDossier}</span>
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modern Minimal Footer */}
-      <footer className="mt-14 text-center text-xs text-slate-500 max-w-xl px-4 space-y-1.5 font-mono relative z-10">
+      {/* Understated Clean Footer */}
+      <footer className="mt-14 text-center text-xs text-slate-500 max-w-xl px-4 space-y-1 font-mono">
         <p className={lang === 'urdu' ? 'font-serif text-sm' : ''}>{t.disclaimer}</p>
         <p className="text-[11px] text-slate-600">
-          Scam Shield Pakistan • Powered by Google Gemma 4 (26B-A4B-IT) • Apache 2.0 • MIT License
+          Scam Shield Pakistan • Powered by Google Gemma 4 (26B-A4B-IT) • MIT License
         </p>
       </footer>
     </main>
