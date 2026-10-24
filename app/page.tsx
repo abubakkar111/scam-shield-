@@ -305,69 +305,68 @@ export default function Home() {
         setError(null);
       };
 
-      let finalTranscriptBuffer = '';
       let lastProcessedHash = '';
+      let lastProcessedNormalized = '';
       let lastProcessTime = 0;
-      let isProcessing = false;
       let lastTriggerTime = 0;
-      let seenSnippets = new Set<string>();
+      let isProcessing = false;
+      const seenSet = new Set<string>();
 
       const normalizeText = (t: string) => {
         return t
           .toLowerCase()
-          .replace(/[^\w\s₹rs]/g, ' ')
+          .replace(/[^a-z0-9\u0600-\u06FF\s₹]/gi, ' ')
           .replace(/\s+/g, ' ')
           .trim();
       };
 
       const getHash = (t: string) => {
         const n = normalizeText(t);
-        // Use only last meaningful part to avoid cumulative duplication
-        const words = n.split(' ');
-        const short = words.slice(Math.max(0, words.length - 15)).join(' ');
+        const words = n.split(' ').filter(w => w.length > 2);
+        const core = words.slice(-12).join(' ');
         let h = 0;
-        for (let i = 0; i < short.length; i++) {
-          h = ((h << 5) - h) + short.charCodeAt(i);
+        for (let i = 0; i < core.length; i++) {
+          h = ((h << 5) - h) + core.charCodeAt(i);
           h |= 0;
         }
-        return h.toString() + short.length;
+        return h.toString();
       };
 
       recognition.onresult = (event: any) => {
-        // Only look at the latest final result to prevent accumulation
-        const latestIndex = event.results.length - 1;
-        if (latestIndex < event.resultIndex) return;
+        if (isProcessing || interceptionAlert) return;
         
-        let finalTranscript = '';
+        // Get only the most recent final result
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript + ' ';
-          }
-        }
-
-        if (finalTranscript.trim()) {
-          const text = finalTranscript.trim();
+          if (!event.results[i].isFinal) continue;
           
-          if (text.length < 25) return;
-
-          const now = Date.now();
+          const text = event.results[i][0].transcript.trim();
+          if (!text || text.length < 35) continue;
+          
           const normalized = normalizeText(text);
           const hash = getHash(text);
+          const now = Date.now();
           
-          // Block if we've seen this exact normalized snippet
-          if (seenSnippets.has(normalized)) return;
+          // Prevent any duplication
+          if (normalized === lastProcessedNormalized) return;
           if (hash === lastProcessedHash) return;
-          if (now - lastProcessTime < 6000) return;
-          if (isProcessing) return;
-          if (now - lastTriggerTime < 10000) return;
-
+          if (seenSet.has(normalized)) return;
+          if (now - lastProcessTime < 8000) return;
+          if (now - lastTriggerTime < 15000) return;
+          
+          // Add to seen set
+          seenSet.add(normalized);
+          if (seenSet.size > 15) {
+            const arr = Array.from(seenSet);
+            for (let k = 0; k < 5; k++) seenSet.delete(arr[k]);
+          }
+          
           setLiveAudioSnippet(text);
           
           const lower = normalized;
           const scamTriggers = [
             'otp',
             'one time password',
-            '6 digit',
+            'code',
             'pin',
             'password',
             'easypaisa',
@@ -383,26 +382,27 @@ export default function Home() {
             'block ho',
             'urgent',
             'foran',
+            'jaldi',
             'send kar',
             'bhej dein',
             'rs 1000',
-            '1000',
+            '5000',
+            '₹',
           ];
 
+          const strongTriggers = ['otp', 'pin', 'password', 'easypaisa', 'jazzcash', 'wapis bhej', 'ghalti se bhej'];
+          const strongCount = strongTriggers.filter((kw) => lower.includes(kw)).length;
           const triggerCount = scamTriggers.filter((kw) => lower.includes(kw)).length;
-          const isThreat = triggerCount >= 2 || (triggerCount >= 1 && (lower.includes('foran') || lower.includes('abhi')));
+          const hasUrgency = lower.includes('foran') || lower.includes('abhi') || lower.includes('jaldi') || lower.includes('urgent');
+          
+          const isThreat = strongCount >= 1 || (triggerCount >= 2 && hasUrgency);
 
-          if (isThreat && !interceptionAlert) {
+          if (isThreat) {
             isProcessing = true;
             lastProcessedHash = hash;
+            lastProcessedNormalized = normalized;
             lastProcessTime = now;
             lastTriggerTime = now;
-            seenSnippets.add(normalized);
-            // Keep only last 10 snippets to prevent memory issues
-            if (seenSnippets.size > 10) {
-              const arr = Array.from(seenSnippets);
-              seenSnippets = new Set(arr.slice(-10));
-            }
             
             triggerInterception({
               source: 'call',
@@ -414,10 +414,14 @@ export default function Home() {
             });
             setMessage(`[Live Call Interception] "${text}"`);
             executeAnalysis(text);
-            finalTranscriptBuffer = '';
             setTimeout(() => {
               isProcessing = false;
-            }, 12000);
+            }, 15000);
+            break;
+          } else {
+            lastProcessedHash = hash;
+            lastProcessedNormalized = normalized;
+            lastProcessTime = now;
           }
         }
       };
@@ -967,7 +971,7 @@ export default function Home() {
       <section className="w-full max-w-3xl px-4 pt-12 pb-7 text-center sm:px-6 sm:pt-16 animate-rise">
         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-300 backdrop-blur">
           <Sparkles className="h-3 w-3 text-emerald-300" />
-          Gemini 2.5 Flash · Hybrid Fraud Intelligence
+          Gemini 2.5 Flash · Hybrid AI + Pakistan Fraud Rules
         </div>
 
         <h2
@@ -1671,7 +1675,7 @@ export default function Home() {
       <footer className="mt-16 w-full max-w-3xl space-y-3 border-t border-white/[0.06] px-4 pt-6 text-center text-xs text-slate-500 sm:px-6">
         <p className={`mx-auto max-w-md leading-relaxed ${lang === 'urdu' ? 'font-serif text-sm' : ''}`}>{t.disclaimer}</p>
         <div className="flex flex-wrap items-center justify-center gap-2 font-mono text-[10px] uppercase tracking-wider text-slate-600">
-          <span className="rounded-full border border-white/[0.06] bg-white/[0.02] px-2.5 py-1">Gemma 4 · 26B-A4B-IT</span>
+          <span className="rounded-full border border-white/[0.06] bg-white/[0.02] px-2.5 py-1">Gemini 2.5 Flash</span>
           <span className="rounded-full border border-white/[0.06] bg-white/[0.02] px-2.5 py-1">On-device OCR</span>
           <span className="rounded-full border border-white/[0.06] bg-white/[0.02] px-2.5 py-1">MIT License</span>
         </div>
