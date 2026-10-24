@@ -309,6 +309,8 @@ export default function Home() {
       let lastProcessedHash = '';
       let lastProcessTime = 0;
       let isProcessing = false;
+      let lastTriggerTime = 0;
+      let seenSnippets = new Set<string>();
 
       const normalizeText = (t: string) => {
         return t
@@ -320,17 +322,23 @@ export default function Home() {
 
       const getHash = (t: string) => {
         const n = normalizeText(t);
+        // Use only last meaningful part to avoid cumulative duplication
+        const words = n.split(' ');
+        const short = words.slice(Math.max(0, words.length - 15)).join(' ');
         let h = 0;
-        for (let i = 0; i < n.length; i++) {
-          h = ((h << 5) - h) + n.charCodeAt(i);
+        for (let i = 0; i < short.length; i++) {
+          h = ((h << 5) - h) + short.charCodeAt(i);
           h |= 0;
         }
-        return h.toString() + n.length;
+        return h.toString() + short.length;
       };
 
       recognition.onresult = (event: any) => {
+        // Only look at the latest final result to prevent accumulation
+        const latestIndex = event.results.length - 1;
+        if (latestIndex < event.resultIndex) return;
+        
         let finalTranscript = '';
-
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             finalTranscript += event.results[i][0].transcript + ' ';
@@ -338,23 +346,24 @@ export default function Home() {
         }
 
         if (finalTranscript.trim()) {
-          finalTranscriptBuffer += finalTranscript;
-          const combined = finalTranscriptBuffer.trim();
-
-          if (!combined || combined.length < 15) return;
+          const text = finalTranscript.trim();
+          
+          if (text.length < 25) return;
 
           const now = Date.now();
-          const hash = getHash(combined);
+          const normalized = normalizeText(text);
+          const hash = getHash(text);
           
-          // Skip if already processed this exact normalized content
+          // Block if we've seen this exact normalized snippet
+          if (seenSnippets.has(normalized)) return;
           if (hash === lastProcessedHash) return;
-          // Throttle to prevent rapid reprocessing
-          if (now - lastProcessTime < 4000) return;
+          if (now - lastProcessTime < 6000) return;
           if (isProcessing) return;
+          if (now - lastTriggerTime < 10000) return;
 
-          setLiveAudioSnippet(combined);
+          setLiveAudioSnippet(text);
           
-          const lower = combined.toLowerCase();
+          const lower = normalized;
           const scamTriggers = [
             'otp',
             'one time password',
@@ -369,40 +378,46 @@ export default function Home() {
             'bisp',
             'benazir',
             'wazifa',
-            'biometric verification',
+            'biometric',
             'account block',
             'block ho',
             'urgent',
+            'foran',
             'send kar',
             'bhej dein',
-            'send 1000',
-            '₹1000',
             'rs 1000',
+            '1000',
           ];
 
           const triggerCount = scamTriggers.filter((kw) => lower.includes(kw)).length;
-          const hasUrgency = lower.includes('foran') || lower.includes('abhi') || lower.includes('urgent') || lower.includes('jaldi');
-          const isThreat = triggerCount >= 1 || (hasUrgency && triggerCount >= 0 && (lower.includes('send') || lower.includes('otp') || lower.includes('pin')));
+          const isThreat = triggerCount >= 2 || (triggerCount >= 1 && (lower.includes('foran') || lower.includes('abhi')));
 
           if (isThreat && !interceptionAlert) {
             isProcessing = true;
             lastProcessedHash = hash;
             lastProcessTime = now;
+            lastTriggerTime = now;
+            seenSnippets.add(normalized);
+            // Keep only last 10 snippets to prevent memory issues
+            if (seenSnippets.size > 10) {
+              const arr = Array.from(seenSnippets);
+              seenSnippets = new Set(arr.slice(-10));
+            }
             
             triggerInterception({
               source: 'call',
               scamType: 'Live Call Extortion / Credential Theft',
-              triggerSnippet: combined,
+              triggerSnippet: text,
               threatLevel: 'high',
               recommendedAction:
                 'Caller is asking for codes or money transfer. DO NOT SHARE ANY PIN, OTP, OR SEND ANY MONEY. Hang up immediately.',
             });
-            setMessage(`[Live Call Interception] "${combined}"`);
-            executeAnalysis(combined);
+            setMessage(`[Live Call Interception] "${text}"`);
+            executeAnalysis(text);
             finalTranscriptBuffer = '';
             setTimeout(() => {
               isProcessing = false;
-            }, 8000);
+            }, 12000);
           }
         }
       };
@@ -432,9 +447,13 @@ export default function Home() {
           try {
             setTimeout(() => {
               if (sentryListening && sentryRecognitionRef.current) {
-                sentryRecognitionRef.current.start();
+                try {
+                  sentryRecognitionRef.current.start();
+                } catch (e) {
+                  setSentryListening(false);
+                }
               }
-            }, 500);
+            }, 1000);
           } catch (e) {
             setSentryListening(false);
           }
