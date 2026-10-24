@@ -408,7 +408,22 @@ export default function Home() {
       };
 
       recognition.onerror = (err: any) => {
-        console.warn('Call listener error:', err);
+        const code = err?.error;
+        if (code === 'no-speech' || code === 'aborted' || code === 'audio-capture') {
+          return;
+        }
+        if (code === 'not-allowed') {
+          setSentryListening(false);
+          setError(
+            lang === 'urdu'
+              ? 'لائیو کال گارڈ کے لیے مائیکروفون کی اجازت درکار ہے۔'
+              : 'Microphone permission required for Live Call Guard.'
+          );
+          return;
+        }
+        if (code) {
+          console.warn('Call listener warning:', code);
+        }
         setSentryListening(false);
       };
 
@@ -571,8 +586,21 @@ export default function Home() {
         }
       };
 
-      recognition.onerror = (err: any) => {
-        console.error('Speech error:', err);
+      recognition.onerror = (event: any) => {
+        const code = event?.error;
+        if (code === 'no-speech' || code === 'aborted' || code === 'audio-capture') {
+          setIsRecording(false);
+          return;
+        }
+        if (code === 'not-allowed') {
+          setError(
+            lang === 'urdu'
+              ? 'مائیکروفون تک رسائی کی اجازت درکار ہے۔'
+              : 'Microphone permission denied. Please allow mic access.'
+          );
+        } else if (code) {
+          console.warn('Speech recognition warning:', code);
+        }
         setIsRecording(false);
       };
 
@@ -920,7 +948,7 @@ export default function Home() {
       <section className="w-full max-w-3xl px-4 pt-12 pb-7 text-center sm:px-6 sm:pt-16 animate-rise">
         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-300 backdrop-blur">
           <Sparkles className="h-3 w-3 text-emerald-300" />
-          Gemma 4 · Fraud Intelligence
+          Gemini 2.5 Flash · Hybrid Fraud Intelligence
         </div>
 
         <h2
