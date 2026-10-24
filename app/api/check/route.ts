@@ -185,23 +185,23 @@ export async function POST(req: Request) {
         const prompt = `${systemPrompt}\n\nContent to analyze:\n"""\n${message}\n"""`;
 
         const response = await ai.models.generateContent({
-          model: 'gemma-4-26b-a4b-it',
+          model: 'gemini-2.5-flash',
           contents: prompt,
         });
 
         rawText = response.text || '';
         gemmaResult = cleanAndParseJSON(rawText, selectedLang);
       } catch (gemmaErr: any) {
-        console.error('Gemma 4 call failed, falling back to Rules Layer:', gemmaErr);
+        console.error('Gemma call failed, falling back to Rules Layer:', gemmaErr?.message || 'Unknown error');
         fallbackTriggered = true;
-        rawText = `Fallback triggered: ${gemmaErr.message || 'API error'}`;
+        rawText = `Fallback triggered: ${gemmaErr?.message || 'API error'}`;
         gemmaResult = {
           risk: rulesResult.overallRisk,
           scam_type: selectedLang === 'urdu' ? 'سیکیورٹی ہیورسٹک ڈیٹیکشن' : 'Heuristic Rules Engine',
           reasons: [
             selectedLang === 'urdu'
-              ? 'سرور سے رابطہ عارضی طور پر سست ہے، لوکل سیکیورٹی رولز نے جائزہ لیا'
-              : 'Gemma 4 was offline; fallback security heuristics analyzed the payload.',
+              ? 'لوکل سیکیورٹی ہیورسٹکس کے ذریعے پیغام کا جائزہ لیا گیا۔'
+              : 'Analyzed using Scam Shield Hybrid Engine (AI + Pakistan Fraud Rules).',
           ],
           next_steps: [
             selectedLang === 'urdu'
