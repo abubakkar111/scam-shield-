@@ -269,9 +269,11 @@ export default function Home() {
     if (sentryListening) {
       if (sentryRecognitionRef.current) {
         try {
+          sentryRecognitionRef.current.onend = null;
           sentryRecognitionRef.current.stop();
         } catch (e) {}
       }
+      sentryRecognitionRef.current = null;
       setSentryListening(false);
       setLiveAudioSnippet(null);
       return;
@@ -294,55 +296,113 @@ export default function Home() {
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = lang === 'urdu' ? 'ur-PK' : 'en-US';
+      if ('maxAlternatives' in recognition) {
+        (recognition as any).maxAlternatives = 1;
+      }
 
       recognition.onstart = () => {
         setSentryListening(true);
         setError(null);
       };
 
+      let finalTranscriptBuffer = '';
+      let lastProcessedHash = '';
+      let lastProcessTime = 0;
+      let isProcessing = false;
+
+      const normalizeText = (t: string) => {
+        return t
+          .toLowerCase()
+          .replace(/[^\w\s₹rs]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
+
+      const getHash = (t: string) => {
+        const n = normalizeText(t);
+        let h = 0;
+        for (let i = 0; i < n.length; i++) {
+          h = ((h << 5) - h) + n.charCodeAt(i);
+          h |= 0;
+        }
+        return h.toString() + n.length;
+      };
+
       recognition.onresult = (event: any) => {
-        let liveTranscript = '';
+        let finalTranscript = '';
+
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          liveTranscript += event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + ' ';
+          }
         }
 
-        if (liveTranscript.trim()) {
-          const text = liveTranscript.trim();
-          setLiveAudioSnippet(text);
+        if (finalTranscript.trim()) {
+          finalTranscriptBuffer += finalTranscript;
+          const combined = finalTranscriptBuffer.trim();
 
-          const lower = text.toLowerCase();
+          if (!combined || combined.length < 15) return;
+
+          const now = Date.now();
+          const hash = getHash(combined);
+          
+          // Skip if already processed this exact normalized content
+          if (hash === lastProcessedHash) return;
+          // Throttle to prevent rapid reprocessing
+          if (now - lastProcessTime < 4000) return;
+          if (isProcessing) return;
+
+          setLiveAudioSnippet(combined);
+          
+          const lower = combined.toLowerCase();
           const scamTriggers = [
             'otp',
-            'code',
-            'block',
+            'one time password',
+            '6 digit',
             'pin',
             'password',
             'easypaisa',
             'jazzcash',
-            'wapis',
-            'ghalti se',
+            'wapis bhej',
+            'ghalti se bhej',
             'lottery',
             'bisp',
-            'biometric',
-            'wazifa',
-            'account block',
-            'urgent',
             'benazir',
+            'wazifa',
+            'biometric verification',
+            'account block',
+            'block ho',
+            'urgent',
+            'send kar',
+            'bhej dein',
+            'send 1000',
+            '₹1000',
+            'rs 1000',
           ];
 
-          const isThreat = scamTriggers.some((kw) => lower.includes(kw));
+          const triggerCount = scamTriggers.filter((kw) => lower.includes(kw)).length;
+          const hasUrgency = lower.includes('foran') || lower.includes('abhi') || lower.includes('urgent') || lower.includes('jaldi');
+          const isThreat = triggerCount >= 1 || (hasUrgency && triggerCount >= 0 && (lower.includes('send') || lower.includes('otp') || lower.includes('pin')));
 
           if (isThreat && !interceptionAlert) {
+            isProcessing = true;
+            lastProcessedHash = hash;
+            lastProcessTime = now;
+            
             triggerInterception({
               source: 'call',
               scamType: 'Live Call Extortion / Credential Theft',
-              triggerSnippet: text,
+              triggerSnippet: combined,
               threatLevel: 'high',
               recommendedAction:
-                'Caller is asking for codes or money transfer. DO NOT SHARE ANY PIN OR APPROVE TRANSACTIONS.',
+                'Caller is asking for codes or money transfer. DO NOT SHARE ANY PIN, OTP, OR SEND ANY MONEY. Hang up immediately.',
             });
-            setMessage(`[Live Call Interception] "${text}"`);
-            executeAnalysis(text);
+            setMessage(`[Live Call Interception] "${combined}"`);
+            executeAnalysis(combined);
+            finalTranscriptBuffer = '';
+            setTimeout(() => {
+              isProcessing = false;
+            }, 8000);
           }
         }
       };
@@ -353,7 +413,19 @@ export default function Home() {
       };
 
       recognition.onend = () => {
-        setSentryListening(false);
+        if (sentryListening && sentryRecognitionRef.current) {
+          try {
+            setTimeout(() => {
+              if (sentryListening && sentryRecognitionRef.current) {
+                sentryRecognitionRef.current.start();
+              }
+            }, 500);
+          } catch (e) {
+            setSentryListening(false);
+          }
+        } else {
+          setSentryListening(false);
+        }
       };
 
       sentryRecognitionRef.current = recognition;
